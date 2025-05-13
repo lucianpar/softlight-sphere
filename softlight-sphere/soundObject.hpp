@@ -4,18 +4,20 @@
 #include <functional>
 #include "al/graphics/al_Mesh.hpp"
 #include "al/graphics/al_Shapes.hpp"
+#include "al/graphics/al_VAO.hpp"
 #include "al/graphics/al_VAOMesh.hpp"
 #include "Gamma/SamplePlayer.h"
 #include "al/app/al_App.hpp"
 #include "al/scene/al_SynthSequencer.hpp"
+#include "al/scene/al_SynthVoice.hpp"
 
 
 
 
 class SoundObject : public al::SynthVoice {
   gam::SamplePlayer<> mSource;
-  al::VAOMesh mesh{al::VAOMesh()};
-  al::Vec3f position{0.0f, 0.0f, 0.0f};
+  al::Mesh mesh;//{al::Mesh()};
+  al::Vec3f position;//{0.0f, 0.0f, 0.0f};
   float mSize{1.0f};
   double time = 0.0;
 
@@ -24,11 +26,13 @@ public:
   FuncType trajectory;
 
   inline SoundObject() {
-    al::addSphere(mesh);
+    al::addSphere(mesh, 5.0);
     mesh.primitive(al::Mesh::POINTS);
+    //std::cout << "SoundObject Mesh Vertices: " << mesh.vertices().size() << std::endl;
   }
 
   void onProcess(al::AudioIOData& io) override {
+    // this->position(1,dt%100,)
     while (io()) {
       io.out(0) += mSource();
     }
@@ -38,26 +42,32 @@ public:
   }
 
   void update(double dt) override {
-    time += dt;
+
+    time = dt;
+    // if the trajectory function is real, then call it
     if (trajectory) {
+     printf("time: %f\n", time);
+      fflush(stdout);
+      // update our position based on this custom function
       position = trajectory(time, position);
     }
+    
   }
 
   void onProcess(al::Graphics& g) override {
+    //mesh.update();
     g.pushMatrix();
     g.translate(position);
+    g.color(1.0,0.0,0.0);
     g.scale(mSize * mSource.pos() / mSource.max());
     g.draw(mesh);
     g.popMatrix();
   }
 
-  void set(float x, float y, float size, const char* filename, FuncType func) {
-    trajectory = func;
-    if (!mSource.load(filename)) {
-      std::cerr << "Failed to load sound file: " << filename << std::endl;
-    }
-    position.set(x, y, 0);
+  void set(float x, float y, float z, float size, const char* filename, FuncType func) {
+    trajectory = func;       // Set the trajectory function
+    mSource.load(filename);  // Load a sound file
+    position.set(x, y, z);   // Set the position of the voice
     mSize = size;
   }
 
@@ -65,10 +75,7 @@ public:
     time = 0;
     mSource.reset();
   }
-
-  void onTriggerOff() override {
-    mSource.finish();
-  }
+  void onTriggerOff() override { mSource.finish(); }
 };
 
 #endif  // SOUND_OBJECT_HPP

@@ -47,7 +47,7 @@ class MyApp : public App {
     }
 
   void onCreate() override {
-    nav().pos(Vec3d(0, 0, 0));  // Set the camera to view the scene
+    nav().pos(Vec3d(0, 0, 5));  // Set the camera to view the scene
     sequencer().playSequence();
     bodyMesh.primitive(Mesh:: POINTS);
 
@@ -57,7 +57,6 @@ class MyApp : public App {
    
     addSphere(boundarySphere, 7.5); 
      boundarySphere.primitive((Mesh::LINES));
-
 
 
 
@@ -98,10 +97,22 @@ int main() {
   MyApp app;
   
 
+  //constants for testing
   double g = 0.7;
+  float a = 1.4;
+  float b = 1.6;
+  float c = 1.0;
+  float d = 0.7;
 
   //assign trajectories in the sequencer!!
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0.5, "/Users/lucian/Desktop/falling master 2.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
+  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, "/Users/lucian/Desktop/falling master 2.wav", [&](double t, const Vec3f& p) -> Vec3f { 
+    return Vec3f(
+    //body of lambda logic. will replace this will header calls
+           (sin(a * p.y) + c * cos(a * p.x)),
+          (sin(b * p.x) + d * cos(b * p.y)), 
+            p.z
+        );
+  });
 //   app.sequencer().add<MyVoice>(0.5, 1).set( 0, 0.5, 0.5, "8.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
 //   app.sequencer().add<MyVoice>(1, 2).set( 0.5, 0.5, 0.7, "8.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
 //   app.sequencer().add<MyVoice>(1.1, 2).set( 0.6, 0.5, 0.7, "8.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
