@@ -6,7 +6,9 @@
 #include "al/app/al_App.hpp"
 #include "al/graphics/al_Shapes.hpp"
 #include "al/graphics/al_VAO.hpp"
+#include "al/graphics/al_VAOMesh.hpp"
 #include "al/math/al_Random.hpp"
+#include "al/math/al_Vec.hpp"
 #include "al/scene/al_SynthSequencer.hpp"
 #include "al/ui/al_ControlGUI.hpp"
 #include "al/ui/al_Parameter.hpp"
@@ -22,35 +24,52 @@
 
 using namespace al;
 
+//testing trajectories
+
+//Vec3f testTraj();
+
 //synth voice for file loading and trajectories moved to header file
 
 class MyApp : public App {
  public:
   al::VAOMesh bodyMesh; //switch to vao mesh
   objParser newObjParser;
+  al::Mesh boundarySphere;
+  ///SoundObject track1;
+  
+
+
 
   void onInit() override { 
     gam::sampleRate(audioIO().framesPerSecond()); 
+    //function for loading in all sound files from a given folder
 
     }
 
   void onCreate() override {
-    nav().pos(Vec3d(0, 0, 8));  // Set the camera to view the scene
+    nav().pos(Vec3d(0, 0, 0));  // Set the camera to view the scene
     sequencer().playSequence();
     bodyMesh.primitive(Mesh:: POINTS);
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
+    bodyMesh.update();
+
+   
+    addSphere(boundarySphere, 7.5); 
+     boundarySphere.primitive((Mesh::LINES));
+
+
 
 
   }
 
-  bool onKeyDown(const Keyboard& k) override {
-    if (k.key() == ' ') {
-      // If the space key is pressed, we will trigger the sequencer
-      sequencer().playSequence();
-    }
-    return true;
-  }
+  // bool onKeyDown(const Keyboard& k) override {
+  //   if (k.key() == ' ') {
+  //     // If the space key is pressed, we will trigger the sequencer
+  //     sequencer().playSequence();
+  //   }
+  //   return true;
+  // }
 
   void onAnimate(double dt) override {
     // Update the sequencer
@@ -63,6 +82,7 @@ class MyApp : public App {
     g.color(1.0);
     g.pointSize( 4.0);
     g.draw(bodyMesh);
+    g.draw(boundarySphere);
 
     
     mSequencer.render(g);
@@ -76,11 +96,11 @@ class MyApp : public App {
 
 int main() {
   MyApp app;
-
   
 
   double g = 0.7;
 
+  //assign trajectories in the sequencer!!
   app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0.5, "/Users/lucian/Desktop/falling master 2.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
 //   app.sequencer().add<MyVoice>(0.5, 1).set( 0, 0.5, 0.5, "8.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
 //   app.sequencer().add<MyVoice>(1, 2).set( 0.5, 0.5, 0.7, "8.wav", [&](double t, const Vec3f& p) -> Vec3f { return p * g; });
