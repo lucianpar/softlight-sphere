@@ -20,6 +20,12 @@
 #include "softlight-sphere/parseObj.hpp"
 #include "softlight-sphere/soundObject.hpp"
 
+//for loading in all my files in a folder 
+#include <filesystem>
+namespace fs = std::filesystem;
+
+
+
 
 
 using namespace al;
@@ -32,6 +38,11 @@ using namespace al;
 
 class MyApp : public App {
  public:
+
+
+  ////INITIAL OBJECTS AND DECLARATIONS////
+  // ->
+
   al::VAOMesh bodyMesh; //switch to vao mesh
   objParser newObjParser;
   al::Mesh boundarySphere;
@@ -47,21 +58,33 @@ class MyApp : public App {
     }
 
   void onCreate() override {
+    ////BIOLERPLATE////
     nav().pos(Vec3d(0, 0, 5));  // Set the camera to view the scene
     sequencer().playSequence();
+
+    //BOUNDARY MESH
+    addSphere(boundarySphere, 7.5); 
+    boundarySphere.primitive((Mesh::LINES));
+
+
+    ///////
+
+
+
+
+    ////CREATE MY MESHES////
     bodyMesh.primitive(Mesh:: POINTS);
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
     bodyMesh.update();
 
    
-    addSphere(boundarySphere, 7.5); 
-     boundarySphere.primitive((Mesh::LINES));
-
-
+    // addSphere(boundarySphere, 7.5); 
+    //  boundarySphere.primitive((Mesh::LINES));
 
   }
 
+  ////BASIC TRIGGERING////
   // bool onKeyDown(const Keyboard& k) override {
   //   if (k.key() == ' ') {
   //     // If the space key is pressed, we will trigger the sequencer
@@ -95,6 +118,13 @@ class MyApp : public App {
 
 int main() {
   MyApp app;
+  std::vector<std::string> tracks;
+
+  // std::string path = "/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/test-audio";
+  //   for (const auto & entry : fs::directory_iterator(path)){
+  //       std::cout << entry.path() << std::endl;
+  //   }
+
   
 
   //constants for testing
