@@ -24,17 +24,20 @@
 
 // MY CUSTOM INCLUDES:
 #include "softlight-sphere/eoys-mesh-fx/ripple.hpp"
+#include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxUtility.hpp"
 #include "softlight-sphere/parseObj.hpp"
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/soundObject.hpp"
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxMain.hpp"
+#include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
 
 
 
 /* TO DO:
-*clean up / organize
+*implement fx 
+*work on scatter effect
 *fix stereo
 *scene 1 and 2 graphics
 *have option for sphere configuration 
@@ -42,6 +45,7 @@
 
 
 
+* set up containers for everything?
 
 */
 
@@ -61,12 +65,22 @@ class MyApp : public al::App {
   ////INITIAL OBJECTS AND DECLARATIONS////
   // ->
 
+  //MESHES//
   al::VAOMesh bodyMesh; 
   objParser newObjParser;
   al::Mesh boundarySphere;
 
+  //MESH EFFECTS//
   VertexEffectChain bodyEffectChain;
   RippleEffect bodyRipple;
+  ScatterEffect bodyScatter;
+
+
+
+
+   ////DECLARE VALUES FOR EVENT TIMES////
+    float moveInEvent = 5.0;
+    // i.e. -- moveOutEvent1, StartRipplingEvent1
   
 
 
@@ -96,7 +110,27 @@ class MyApp : public al::App {
     bodyMesh.primitive(al::Mesh:: POINTS);
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
+    bodyMesh.translate(0,1.5,1.5);
     bodyMesh.update();
+
+
+
+    ////SET MESH EFFECTS////
+    bodyScatter.setBaseMesh(bodyMesh.vertices());
+    bodyScatter.setParams(1.0, 5.0);
+    bodyScatter.setScatterVector(bodyMesh);
+    bodyRipple.setParams(5.0, 0.5, 4.0, 'y');
+
+
+
+    bodyEffectChain.pushBack(&bodyRipple);
+    bodyEffectChain.pushBack(&bodyScatter);
+    //bodyScatter.triggerOut(true, bodyMesh);
+
+
+
+
+   
 
    
 
@@ -118,6 +152,22 @@ class MyApp : public al::App {
     sequencer().update(t); // XXX important to call this
     std::cout << "global time: " << t << std::endl;
     // should we call in the audio callback instead?
+
+
+    //// PROCESS MESH EFFECTS ////
+    bodyEffectChain.process(bodyMesh, t);
+    bodyScatter.triggerOut(true, bodyMesh);
+
+    //MESH EFFECT SEQUENCING//
+
+    if (t>=moveInEvent){
+      bodyScatter.setParams(5.0, 5.0);
+      bodyScatter.triggerIn(true);
+      if(t<=10.0){
+        bodyRipple.setParams(5.0, (0.5-((t-moveInEvent)*0.1)), 4.0, 'y');
+      }
+    }
+
   }
 
   void onDraw(al::Graphics& g) override {
@@ -141,7 +191,7 @@ int main() {
   MyApp app;
 
 
-  //can this move to onCreate??
+  //can this move to onCreate or initial app declarations??
 
   AudioLoader audioLoader;
   std::vector<std::vector<std::string>> songFiles(5); //vector for each song scene . //NOTE -- VEC IS 0 INDEX, BUT SONG FOLDERS ARE 1 INDEX FOR CLARITY
@@ -163,22 +213,22 @@ int main() {
   float d = 0.7;
 
   //assign trajectories in the sequencer!!
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (sin(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * cos(b * p.y)), 
-            p.z
-        );
-  });
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (cos(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * sin(b * p.y)), 
-            p.z
-        );
-  });
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (sin(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * cos(b * p.y)), 
+  //           p.z
+  //       );
+  // });
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (cos(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * sin(b * p.y)), 
+  //           p.z
+  //       );
+  // });
 
 
   app.start();
