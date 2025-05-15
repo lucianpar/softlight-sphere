@@ -109,12 +109,7 @@ class MyApp : public al::App {
     sequencer().playSequence();
 
     // //INITIALIZE LIGHTING 
-    //  light.ambient(al::Color(0.2, 0.2, 0.2));    // Soft ambient light
-    // light.diffuse(al::Color(1.0, 1.0, 1.0));    // White diffuse light
-    // light.specular(al::Color(1.0, 1.0, 1.0));   // Specular highlights
-    // light.pos(5.0, 5.0, 10.0);
-
-
+   
 
 
 
@@ -215,11 +210,7 @@ class MyApp : public al::App {
   void onDraw(al::Graphics& g) override {
     g.clear(0);
 
-    //testing lighting (llm helped)
-    g.lighting(false);
-    g.light(light); // Use the light instance
     
-    //end lighting test
 
     //color sequence
     if(globalTime<=particlesAppearEvent){
@@ -257,6 +248,7 @@ int main() {
   //audioLoader.loadSceneAudio(songFiles, 3);
   //audioLoader.loadSceneAudio(songFiles, 4);
   //audioLoader.loadSceneAudio(songFiles, 5);
+  //audioLoader.loadSceneAudio(songFiles, 6);
 
   // ^^^
 
@@ -269,6 +261,10 @@ int main() {
   float c = 1.0;
   float d = 0.7;
 
+
+
+  //group audio by every scene. make multiple sequencers to trigger when every scene index is switched
+  
   //assign trajectories in the sequencer!!
   app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
     return al::Vec3f(
