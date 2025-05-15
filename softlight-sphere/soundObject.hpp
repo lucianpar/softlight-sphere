@@ -14,12 +14,16 @@
 
 
 
+
+
+
 class SoundObject : public al::SynthVoice {
   gam::SamplePlayer<> mSource;
   al::Mesh mesh;//{al::Mesh()};
   al::Vec3f position;//{0.0f, 0.0f, 0.0f};
   float mSize{1.0f};
   double time = 0.0;
+  bool showingObject;
 
 public:
   typedef std::function<al::Vec3f(double, const al::Vec3f&)> FuncType;
@@ -34,7 +38,9 @@ public:
   void onProcess(al::AudioIOData& io) override {
     // this->position(1,dt%100,)
     while (io()) {
-      io.out(0) += mSource();
+      float sampleValue = mSource(); //temporary fix
+      io.out(0) += sampleValue;
+      io.out(1) += sampleValue;
     }
     if (mSource.done()) {
       free();
@@ -46,8 +52,8 @@ public:
     time = dt;
     // if the trajectory function is real, then call it
     if (trajectory) {
-     printf("time: %f\n", time);
-      fflush(stdout);
+    //  printf("time: %f\n", time);
+    //   fflush(stdout);
       // update our position based on this custom function
       position = trajectory(time, position);
     }
@@ -60,15 +66,18 @@ public:
     g.translate(position);
     g.color(1.0,0.0,0.0);
     g.scale(mSize * mSource.pos() / mSource.max());
+    if (showingObject){
     g.draw(mesh);
+    }
     g.popMatrix();
   }
 
-  void set(float x, float y, float z, float size, const char* filename, FuncType func) {
+  void set(float x, float y, float z, float size, bool showObject, const char* filename, FuncType func) {
     trajectory = func;       // Set the trajectory function
     mSource.load(filename);  // Load a sound file
     position.set(x, y, z);   // Set the position of the voice
     mSize = size;
+    showingObject = showObject;
   }
 
   void onTriggerOn() override {

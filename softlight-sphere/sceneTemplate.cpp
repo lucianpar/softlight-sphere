@@ -36,16 +36,12 @@
 
 
 /* TO DO:
-*implement fx 
-*work on scatter effect
-*fix stereo
+
+*figure out setting up bodyMesh as a uv
 *scene 1 and 2 graphics
 *have option for sphere configuration 
 
-
-
-
-* set up containers for everything?
+* set up scene containers for everything?
 
 */
 
@@ -80,6 +76,7 @@ class MyApp : public al::App {
 
    ////DECLARE VALUES FOR EVENT TIMES////
     float moveInEvent = 5.0;
+    float stopRippleEvent = 10.0f;
     // i.e. -- moveOutEvent1, StartRipplingEvent1
   
 
@@ -110,7 +107,9 @@ class MyApp : public al::App {
     bodyMesh.primitive(al::Mesh:: POINTS);
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
-    bodyMesh.translate(0,1.5,1.5);
+    bodyMesh.translate(0,-3.5,4);
+    //add rotation -- make this a nav??
+    
     bodyMesh.update();
 
 
@@ -151,6 +150,7 @@ class MyApp : public al::App {
     // Update the sequencer
     sequencer().update(t); // XXX important to call this
     std::cout << "global time: " << t << std::endl;
+     fflush(stdout);
     // should we call in the audio callback instead?
 
 
@@ -163,7 +163,7 @@ class MyApp : public al::App {
     if (t>=moveInEvent){
       bodyScatter.setParams(5.0, 5.0);
       bodyScatter.triggerIn(true);
-      if(t<=10.0){
+      if(t<=stopRippleEvent){
         bodyRipple.setParams(5.0, (0.5-((t-moveInEvent)*0.1)), 4.0, 'y');
       }
     }
@@ -191,8 +191,9 @@ int main() {
   MyApp app;
 
 
-  //can this move to onCreate or initial app declarations??
+  //can this section move to onCreate or initial app declarations?? or is it fine here//
 
+  bool soundObjectVisual = false; 
   AudioLoader audioLoader;
   std::vector<std::vector<std::string>> songFiles(5); //vector for each song scene . //NOTE -- VEC IS 0 INDEX, BUT SONG FOLDERS ARE 1 INDEX FOR CLARITY
   audioLoader.loadSceneAudio(songFiles, 1);
@@ -213,22 +214,22 @@ int main() {
   float d = 0.7;
 
   //assign trajectories in the sequencer!!
-  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-  //   return al::Vec3f(
-  //   //body of lambda logic. will replace this will header calls
-  //          (sin(a * p.y) + c * cos(a * p.x)),
-  //         (sin(b * p.x) + d * cos(b * p.y)), 
-  //           p.z
-  //       );
-  // });
-  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5, (songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-  //   return al::Vec3f(
-  //   //body of lambda logic. will replace this will header calls
-  //          (cos(a * p.y) + c * cos(a * p.x)),
-  //         (sin(b * p.x) + d * sin(b * p.y)), 
-  //           p.z
-  //       );
-  // });
+  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+    return al::Vec3f(
+    //body of lambda logic. will replace this will header calls
+           (sin(a * p.y) + c * cos(a * p.x)),
+          (sin(b * p.x) + d * cos(b * p.y)), 
+            p.z
+        );
+  });
+  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+    return al::Vec3f(
+    //body of lambda logic. will replace this will header calls
+           (cos(a * p.y) + c * cos(a * p.x)),
+          (sin(b * p.x) + d * sin(b * p.y)), 
+            p.z
+        );
+  });
 
 
   app.start();

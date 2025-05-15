@@ -14,7 +14,7 @@
  */
 class ScatterEffect : public VertexEffect {
 public:
-    float rate = 1.0f;     // pulse frequency in Hz
+    float rate = 1.0f;     // Seconds to reach displacement target
     float amount = 0.2f;   // max displacement amount in GL units
     bool outward = false;
     bool inward = false;
@@ -22,7 +22,7 @@ public:
     std::vector<al::Vec3f> displacementVector;
     std::vector<al::Vec3f> targetVertices;
 
-    // Random number generation (no rand)
+    // easiest random num for now
     std::mt19937 rng{std::random_device{}()};
     std::uniform_real_distribution<float> dist{-1.0f, 1.0f};
 
@@ -76,7 +76,7 @@ public:
             targetVertices[i] = baseVerts[i] + displacementVector[i];
         }
 
-        std::cout << "Scatter Triggered out" << std::endl;
+        //std::cout << "Scatter Triggered out" << std::endl;
     }
 
     /**
@@ -91,7 +91,7 @@ public:
         outward = false;
         inward = true;
         targetVertices = baseVerts;
-        std::cout << "Scatter Triggered in (reset)" << std::endl;
+        //std::cout << "Scatter Triggered in (reset)" << std::endl;
     }
 
     /**
