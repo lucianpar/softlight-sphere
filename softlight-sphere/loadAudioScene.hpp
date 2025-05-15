@@ -23,6 +23,7 @@ void loadSceneAudio(std::vector<std::vector<std::string>>& storageVector, int sc
         if (fileName != "." && fileName != "..") { // Skip . and ..
             //std::cout << fileName << std::endl;
             storageVector[sceneNumber-1].push_back(path + "/" + fileName);
+            std::cout << fileName << std::endl;
 
 
         }
