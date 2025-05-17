@@ -56,7 +56,7 @@
 
 
 
-
+int sceneIndex = 1;
 
 
 //using namespace al;
@@ -95,7 +95,7 @@ class MyApp : public al::App {
   //GLOBAL TIME PARAMS//
    double globalTime = 0;
    double sceneTime = 0;
-   int sceneIndex;
+   //int sceneIndex; -- moved out of app to be global
   
 
 
@@ -203,20 +203,23 @@ class MyApp : public al::App {
   }
 
   ////BASIC TRIGGERING////
-  // bool onKeyDown(const Keyboard& k) override {
-  //   if (k.key() == ' ') {
-  //     // If the space key is pressed, we will trigger the sequencer
-  //     sequencer().playSequence();
-  //   }
-  //   return true;
-  // }
+  bool onKeyDown(const al::Keyboard& k) override {
+
+    //if (k.key() == '1') {
+      // If the space key is pressed, we will trigger the sequencer
+      //sequencer().playSequence();
+      sceneIndex = k.key()-48;
+      std::cout << "pressed key: " << sceneIndex << std::endl;
+    
+    return true;
+  }
 
   void onAnimate(double dt) override {
      globalTime += dt;
     // Update the sequencer
     sequencer().update(globalTime); // XXX important to call this
-    std::cout << "global time: " << globalTime << std::endl;
-     fflush(stdout);
+    // std::cout << "global time: " << globalTime << std::endl;
+    //  fflush(stdout);
     // should we call in the audio callback instead?
 
 
@@ -318,6 +321,7 @@ class MyApp : public al::App {
 
 int main() {
   MyApp app;
+  //int sceneIndex;
 
 
   //can this section move to onCreate or initial app declarations?? or is it fine here//
@@ -326,6 +330,7 @@ int main() {
   AudioLoader audioLoader;
   std::vector<std::vector<std::string>> songFiles(5); //vector for each song scene . //NOTE -- VEC IS 0 INDEX, BUT SONG FOLDERS ARE 1 INDEX FOR CLARITY
   audioLoader.loadSceneAudio(songFiles, 1);
+  audioLoader.loadSceneAudio(songFiles, 2);
   //audioLoader.loadSceneAudio(songFiles, 2);
   //audioLoader.loadSceneAudio(songFiles, 3);
   //audioLoader.loadSceneAudio(songFiles, 4);
@@ -350,22 +355,26 @@ int main() {
   //assign trajectories in the sequencer!!
 
   // UNCOMMENT AUDIO !!!!!!
-  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-  //   return al::Vec3f(
-  //   //body of lambda logic. will replace this will header calls
-  //          (sin(a * p.y) + c * cos(a * p.x)),
-  //         (sin(b * p.x) + d * cos(b * p.y)), 
-  //           p.z
-  //       );
-  // });
-  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-  //   return al::Vec3f(
-  //   //body of lambda logic. will replace this will header calls
-  //          (cos(a * p.y) + c * cos(a * p.x)),
-  //         (sin(b * p.x) + d * sin(b * p.y)), 
-  //           p.z
-  //       );
-  // });
+  if (sceneIndex ==1){
+  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+    return al::Vec3f(
+    //body of lambda logic. will replace this will header calls
+           (sin(a * p.y) + c * cos(a * p.x)),
+          (sin(b * p.x) + d * cos(b * p.y)), 
+            p.z
+        );
+  });
+  }
+  if (sceneIndex == 2) {
+  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[1][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+    return al::Vec3f(
+    //body of lambda logic. will replace this will header calls
+           (cos(a * p.y) + c * cos(a * p.x)),
+          (sin(b * p.x) + d * sin(b * p.y)), 
+            p.z
+        );
+  });
+  }
 
 
   app.start();
