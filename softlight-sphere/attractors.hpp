@@ -10,9 +10,9 @@ struct Attractor {
     //basic thomas attractor
 
     public:
-    float b = 0.208;
+    //float b = 0.208;
     //float speed = 0.1;
-    void process(al::VAOMesh& mMesh, float time, float speed){
+    void processThomas(al::VAOMesh& mMesh, float time, float speed, float b = 0.208){
     auto& vertices = mMesh.vertices();
     for (int i = 0; i < mMesh.vertices().size(); ++i){
 
@@ -25,8 +25,6 @@ struct Attractor {
         float newZ = z + (-b * z + sin(x)) * time * speed;
 
         vertices[i] = al::Vec3f(newX,newY,newZ); 
-
-
 
     }
 

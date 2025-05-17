@@ -180,9 +180,9 @@ class MyApp : public al::App {
     bodyEffectChain.pushBack(&bodyScatter);
 
     //for opening sphere
-     openingSphereScatter.setBaseMesh(bodyMesh.vertices()); // set base mesh to be body so it moves inward towards it
-    openingSphereScatter.setParams(1.0, 20.0);
-    openingSphereScatter.setScatterVector(bodyMesh);
+    // openingSphereScatter.setBaseMesh(bodyMesh.vertices()); // set base mesh to be body so it moves inward towards it
+    //openingSphereScatter.setParams(1.0, 20.0);
+    //openingSphereScatter.setScatterVector(bodyMesh);
     openingSphereRippleY.setParams(5.0, rippleAmplitudeTrack1, 4.0, 'y');
     openingSphereRippleX.setParams(10.0, rippleAmplitudeTrack1, 6.0, 'x');
 
@@ -190,7 +190,7 @@ class MyApp : public al::App {
 
     openingSphereEffectChain.pushBack(&openingSphereRippleY);
     openingSphereEffectChain.pushBack(&openingSphereRippleY);
-    openingSphereEffectChain.pushBack(&openingSphereScatter);
+    //openingSphereEffectChain.pushBack(&openingSphereScatter);
     //bodyScatter.triggerOut(true, bodyMesh);
 
 
@@ -226,7 +226,7 @@ class MyApp : public al::App {
     //openingSphereScatter.stop(true);
     bodyScatter.triggerOut(true, bodyMesh);
 
-    sphereAttractor.process(openingSphereMesh, globalTime, 0.001);
+    sphereAttractor.processThomas(openingSphereMesh, globalTime, 0.001);
 
     //MESH EFFECT SEQUENCING//
 
