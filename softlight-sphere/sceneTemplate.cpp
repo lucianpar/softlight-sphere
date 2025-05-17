@@ -33,6 +33,9 @@
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxMain.hpp"
 #include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
+#include "softlight-sphere/imageToMesh.hpp"
+#include "softlight-sphere/imageToSphere.hpp"
+#include "softlight-sphere/attractors.hpp"
 
 
 
@@ -40,7 +43,9 @@
 
 *figure out setting up bodyMesh as a uv for rotation
 *ask karl about lighting
-*scene 1 and 2 graphics
+*scene 1 and 2 graphics 
+- START ACTUALLY SEQUENCING BASED ON TRACKS 
+- SET UP TRACK ANALYZER / STRING SEQUENCE GENERATOR 
 *have option for sphere configuration 
 
 * set up scene containers for everything?
@@ -65,15 +70,26 @@ class MyApp : public al::App {
   al::Light light;
 
   //MESHES//
+  //WrappedImage wrappedImage;
+  ImageSphereLoader openingSphereLoader;
+  al::VAOMesh openingSphereMesh;
   al::VAOMesh bodyMesh; 
   objParser newObjParser;
   al::Mesh boundarySphere;
 
   //MESH EFFECTS//
+  //for body 
   VertexEffectChain bodyEffectChain;
   RippleEffect bodyRippleY;
   RippleEffect bodyRippleX;
   ScatterEffect bodyScatter;
+  //for opening sphere
+  VertexEffectChain openingSphereEffectChain;
+  RippleEffect openingSphereRippleY;
+  RippleEffect openingSphereRippleX;
+  ScatterEffect openingSphereScatter;
+  Attractor sphereAttractor;
+
 
 
   //GLOBAL TIME PARAMS//
@@ -88,9 +104,11 @@ class MyApp : public al::App {
    ////DECLARE VALUES FOR EVENT TIMES////
     float rippleAmplitudeTrack1 = 1.0;
 
+    float shellTurnsWhiteEvent = 2.0;
     float moveInEvent = 5.0;
     float stopRippleEvent = 10.0f;
     float particlesAppearEvent = 4.0f;
+
     
     // i.e. -- moveOutEvent1, StartRipplingEvent1
   
@@ -126,20 +144,29 @@ class MyApp : public al::App {
     ///////
 
 
-
+    // SCENE 1 STUFF INITS
 
     ////CREATE MY MESHES////
+
+    // NEED TO RESET TO RELATIVE PATHS, NOT HARDCODED
     bodyMesh.primitive(al::Mesh:: POINTS);
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
     bodyMesh.translate(0,3.5,-4);
-    //add rotation -- make this a nav??
-    
     bodyMesh.update();
+
+
+    openingSphereLoader.loadImage("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/poster-source2.png", openingSphereMesh);
+    //openingSphereLoader.init();
+    openingSphereMesh.primitive(al::Mesh::POINTS);
+    
+    
+    
 
 
 
     ////SET MESH EFFECTS////
+    //for body
     bodyScatter.setBaseMesh(bodyMesh.vertices());
     bodyScatter.setParams(1.0, 20.0);
     bodyScatter.setScatterVector(bodyMesh);
@@ -151,11 +178,24 @@ class MyApp : public al::App {
     bodyEffectChain.pushBack(&bodyRippleY);
     bodyEffectChain.pushBack(&bodyRippleX);
     bodyEffectChain.pushBack(&bodyScatter);
+
+    //for opening sphere
+     openingSphereScatter.setBaseMesh(bodyMesh.vertices()); // set base mesh to be body so it moves inward towards it
+    openingSphereScatter.setParams(1.0, 20.0);
+    openingSphereScatter.setScatterVector(bodyMesh);
+    openingSphereRippleY.setParams(5.0, rippleAmplitudeTrack1, 4.0, 'y');
+    openingSphereRippleX.setParams(10.0, rippleAmplitudeTrack1, 6.0, 'x');
+
+
+
+    openingSphereEffectChain.pushBack(&openingSphereRippleY);
+    openingSphereEffectChain.pushBack(&openingSphereRippleY);
+    openingSphereEffectChain.pushBack(&openingSphereScatter);
     //bodyScatter.triggerOut(true, bodyMesh);
 
 
 
-
+     // SCENE 2 STUFF INITS
    
 
    
@@ -182,17 +222,28 @@ class MyApp : public al::App {
 
     //// PROCESS MESH EFFECTS ////
     bodyEffectChain.process(bodyMesh, globalTime);
+    openingSphereEffectChain.process(openingSphereMesh, globalTime);
+    //openingSphereScatter.stop(true);
     bodyScatter.triggerOut(true, bodyMesh);
+
+    sphereAttractor.process(openingSphereMesh, globalTime, 0.001);
 
     //MESH EFFECT SEQUENCING//
 
     //SCENE 1 -- from 
     
     float newAmplitude;
+    float openingSphereFactor = 0.002;
     if (globalTime<=moveInEvent){newAmplitude = 0;}
     if (globalTime>=moveInEvent){
       bodyScatter.setParams(5.0, 20.0);
       bodyScatter.triggerIn(true);
+
+      //openingSphereScatter.stop(false);
+      //openingSphereScatter.setParams(5.0, 20.0);
+      //openingSphereScatter.triggerIn(true);
+      openingSphereMesh.scale(0.999-(openingSphereFactor/2));
+      openingSphereMesh.translate(0,(4.5*openingSphereFactor),(-4*openingSphereFactor));
         if (globalTime<=stopRippleEvent) { //slows down rippling
          newAmplitude = (rippleAmplitudeTrack1-((globalTime-moveInEvent) /(stopRippleEvent-moveInEvent)));
         }
@@ -201,6 +252,11 @@ class MyApp : public al::App {
         bodyRippleY.setParams(5.0, newAmplitude , 4.0,'y'); //
         bodyRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
 
+        openingSphereRippleY.setParams(5.0, newAmplitude , 4.0,'y'); 
+        openingSphereRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
+
+
+
     }
   
     //SCENE 2 -- from
@@ -208,10 +264,30 @@ class MyApp : public al::App {
   }
 
   void onDraw(al::Graphics& g) override {
-    g.clear(0);
+    if (globalTime < shellTurnsWhiteEvent) {
+    g.clear(0 + ((globalTime/shellTurnsWhiteEvent*60)));
+    }
+    if (globalTime >= shellTurnsWhiteEvent){
+    g.clear(1.0);
+    }
+    if (globalTime >= moveInEvent && globalTime <= moveInEvent + 2.0){
+      g.clear(1.0-(((globalTime-moveInEvent)/shellTurnsWhiteEvent*60)));
+    }
+    if (globalTime > moveInEvent + 2.0){
+      g.clear(0.0);
+    }
+
+
+    //TESTING IMAGE LOADING
+    g.meshColor();
+    openingSphereLoader.draw(g, openingSphereMesh);
+    g.draw(openingSphereMesh);
+
 
     
 
+
+    // MAIN COLOR SEQUENCE //
     //color sequence
     if(globalTime<=particlesAppearEvent){
     g.color(0+(globalTime/particlesAppearEvent));}
@@ -219,9 +295,15 @@ class MyApp : public al::App {
       g.color(1.0);
     }
     g.pointSize( 2.0);
-    //if(t >= 1){
+    //g.color(1.0);
     g.draw(bodyMesh); //only draw once particles have dispersed
+
+
     //g.draw(boundarySphere);
+
+
+
+    
     
 
     
@@ -266,22 +348,24 @@ int main() {
   //group audio by every scene. make multiple sequencers to trigger when every scene index is switched
   
   //assign trajectories in the sequencer!!
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (sin(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * cos(b * p.y)), 
-            p.z
-        );
-  });
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (cos(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * sin(b * p.y)), 
-            p.z
-        );
-  });
+
+  // UNCOMMENT AUDIO !!!!!!
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (sin(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * cos(b * p.y)), 
+  //           p.z
+  //       );
+  // });
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][1]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (cos(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * sin(b * p.y)), 
+  //           p.z
+  //       );
+  // });
 
 
   app.start();
