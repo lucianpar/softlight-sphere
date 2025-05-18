@@ -90,6 +90,7 @@ class MyApp : public al::App {
   VertexEffectChain bodyEffectChain;
   RippleEffect bodyRippleY;
   RippleEffect bodyRippleX;
+  RippleEffect bodyRippleZ;
   ScatterEffect bodyScatter;
   Attractor bodyAttractor;
 
@@ -110,7 +111,10 @@ class MyApp : public al::App {
    ////DECLARE VALUES FOR EVENT TIMES////
 
    //SCENE 1 
-    float rippleAmplitudeTrack1 = 1.0;
+    float rippleAmplitudeScene1 = 0.0;
+    float rippleSpeedXScene1 = 0.2;
+    float rippleSpeedYScene1 = 0.2;
+    float rippleSpeedZScene1 = 0.3;
 
     float shellTurnsWhiteEvent = 7.0f;
   
@@ -128,14 +132,12 @@ class MyApp : public al::App {
 
     float startAttractor = 70.0f;
 
-    float startScaleIn = 80.0f;
+    float moveInEvent = 85.0;
 
-    float startTransitionToBody = 85.0f;
-
-     float stopRippleEvent = 10.0f;
+  
 
 
-     float moveInEvent = 70.0;
+  
 
 
 
@@ -201,19 +203,21 @@ class MyApp : public al::App {
     ////SET MESH EFFECTS////
     //for body
     bodyScatter.setBaseMesh(bodyMesh.vertices());
-    bodyScatter.setParams(1.0, 20.0);
+    bodyScatter.setParams(1.0, 30.0);
     bodyScatter.setScatterVector(bodyMesh);
-    bodyRippleY.setParams(5.0, rippleAmplitudeTrack1, 4.0, 'y');
-    bodyRippleX.setParams(10.0, rippleAmplitudeTrack1, 6.0, 'x');
+    bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+    bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+    bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 5.0, 'z');
 
 
 
     bodyEffectChain.pushBack(&bodyRippleY);
     bodyEffectChain.pushBack(&bodyRippleX);
+    bodyEffectChain.pushBack(&bodyRippleZ);
     bodyEffectChain.pushBack(&bodyScatter);
 
   
-    //bodyScatter.triggerOut(true, bodyMesh);
+    bodyScatter.triggerOut(true, bodyMesh);
 
 
 
@@ -261,12 +265,12 @@ class MyApp : public al::App {
 
 
     //// PROCESS MESH EFFECTS ////
-    bodyEffectChain.process(bodyMesh, globalTime);
+    // bodyEffectChain.process(bodyMesh, globalTime);
     //openingSphereEffectChain.process(openingSphereMesh, globalTime);
     //openingSphereScatter.stop(true);
-    bodyScatter.triggerOut(true, bodyMesh);
+    //bodyScatter.triggerOut(true, bodyMesh);
 
-    bodyAttractor.processThomas(bodyMesh, globalTime, 0.001);
+    //bodyAttractor.processThomas(bodyMesh, globalTime, 0.001);
 
 
 
@@ -274,25 +278,39 @@ class MyApp : public al::App {
     //MESH EFFECT SEQUENCING//
 
     //SCENE 1 -- from 
+
+    // bodyAttractor.processThomas(bodyMesh, globalTime, 0.01);
+    // bodyMesh.scale(1.01);
     
     float newAmplitude;
-    // if (globalTime<=moveInEvent){newAmplitude = 0;}
-    // if (globalTime>=moveInEvent){
-    //   bodyScatter.setParams(5.0, 20.0);
-    //   bodyScatter.triggerIn(true);
+    if (globalTime >= particlesSlowRippleEvent && globalTime <= rippleSpeedUpEvent) {
+      rippleAmplitudeScene1 = ((globalTime-particlesSlowRippleEvent)/(rippleSpeedUpEvent-particlesSlowRippleEvent));
+      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
+    }
+    if (globalTime>=rippleSpeedUpEvent && globalTime <= stopSpeedUpEvent){
+      rippleSpeedXScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
+      rippleSpeedYScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
+      rippleSpeedZScene1 = 0.3 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent))); //.0015;
+      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
 
-  
-   
-    //     if (globalTime<=stopRippleEvent) { //slows down rippling
-    //      newAmplitude = (rippleAmplitudeTrack1-((globalTime-moveInEvent) /(stopRippleEvent-moveInEvent)));
-    //     }
-    //     else{ newAmplitude = 0.0f; //once time is past ripple event, keep at 0 so amp doesn't go negative
-    //     }
-    //     bodyRippleY.setParams(5.0, newAmplitude , 4.0,'y'); //
-    //     bodyRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
-
-
+    }
+    
+    // if (globalTime>=10 && globalTime <= 20){
+    //   bodyRippleY.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
+    //   bodyRippleX.setParams(rippleSpeedXScene1, 0, 6.0, 'x');
+    //   bodyRippleZ.setParams(rippleSpeedZScene1, 0, 5.0, 'z');
+    //   //bodyAttractor.processThomas(bodyMesh, globalTime, 0.00001);
     // }
+    if(globalTime>= moveInEvent){
+      bodyScatter.triggerIn(true);
+    }
+    
+
+     bodyEffectChain.process(bodyMesh, globalTime);
   
     //SCENE 2 -- from
 
@@ -310,29 +328,29 @@ class MyApp : public al::App {
     if (sceneIndex == 1){
 
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
-    g.clear(0);
-    // if (globalTime < shellTurnsWhiteEvent) {
-    // shellIncrementScene1 += (globalTime / (shellTurnsWhiteEvent*60));
-    // g.clear(shellIncrementScene1);
-    // }
-    // if (globalTime >= shellTurnsWhiteEvent){
-    // g.clear(1.0);
-    // }
-    // if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
-    //   shellIncrementScene1 -=  (globalTime / (shellTurnsWhiteEvent*60));
-    //   g.clear(1.0-shellIncrementScene1);
-    // }
+    if (globalTime < shellTurnsWhiteEvent) {
+    shellIncrementScene1 += (globalTime / (shellTurnsWhiteEvent*60));
+    g.clear(shellIncrementScene1);
+    }
+    if (globalTime >= shellTurnsWhiteEvent){
+    g.clear(1.0);
+    }
+    if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
+      shellIncrementScene1 -=  (globalTime / (shellTurnsWhiteEvent*60));
+      g.clear(1.0-shellIncrementScene1);
+    }
   
 
 
     //PARTICLES SEQUENCE 1 
-    g.pointSize(2.0);
+    g.pointSize(5.0);
     //g.color(1.0);
-    g.meshColor();
+    //g.meshColor();
 
-    // if (globalTime >= particlesAppearEvent) {
-    // g.meshColor();
-    // }
+    if (globalTime >= particlesAppearEvent) {
+    g.meshColor();
+    g.draw(bodyMesh);
+    }
     
 
     // MAIN COLOR SEQUENCE //
@@ -344,7 +362,7 @@ class MyApp : public al::App {
     // }
 
 
-    g.draw(bodyMesh); //only draw once particles have dispersed
+   //only draw once particles have dispersed
 
 
     //g.draw(boundarySphere);
