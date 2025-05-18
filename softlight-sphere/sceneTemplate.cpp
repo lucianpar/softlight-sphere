@@ -27,6 +27,7 @@
 #include "softlight-sphere/eoys-mesh-fx/ripple.hpp"
 #include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxUtility.hpp"
+#include "softlight-sphere/meshMorph.hpp"
 #include "softlight-sphere/parseObj.hpp"
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/soundObject.hpp"
@@ -36,6 +37,7 @@
 #include "softlight-sphere/imageToMesh.hpp"
 #include "softlight-sphere/imageToSphere.hpp"
 #include "softlight-sphere/attractors.hpp"
+#include "softlight-sphere/imageColorToMesh.hpp"
 
 
 
@@ -43,7 +45,7 @@
 
 *figure out setting up bodyMesh as a uv for rotation
 * set up newer sequence -
-* make main shell transition to body
+* make main shell transition to body - setting up heaeder
 *ask karl about lighting
 *scene 1 and 2 graphics 
 
@@ -75,6 +77,8 @@ class MyApp : public al::App {
   // ->
   al::Light light;
 
+  //// START DECLARATIONS FOR SCENE 1 ////
+
   //MESHES//
   //WrappedImage wrappedImage;
   ImageSphereLoader openingSphereLoader;
@@ -82,6 +86,7 @@ class MyApp : public al::App {
   al::VAOMesh bodyMesh; 
   objParser newObjParser;
   al::Mesh boundarySphere;
+  NewColorBuffer scene1ColorBuffer;
 
   //MESH EFFECTS//
   //for body 
@@ -95,6 +100,8 @@ class MyApp : public al::App {
   RippleEffect openingSphereRippleX;
   ScatterEffect openingSphereScatter;
   Attractor sphereAttractor;
+
+  //// END DECLARATIONS FOR SCENE 1 ////
 
 
 
@@ -142,7 +149,7 @@ class MyApp : public al::App {
 
   //SCENE 2
 
-    float track2Start = 119;
+    //float track2Start = 119;
     
     // i.e. -- moveOutEvent1, StartRipplingEvent1
   
@@ -187,12 +194,18 @@ class MyApp : public al::App {
 
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
     bodyMesh.translate(0,3.5,-4);
+
+    scene1ColorBuffer.imageToNewMesh("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400image.png", bodyMesh);
+
+    
     bodyMesh.update();
 
 
-    openingSphereLoader.loadImage("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/poster-source2.png", openingSphereMesh);
-    //openingSphereLoader.init();
-    openingSphereMesh.primitive(al::Mesh::POINTS);
+    openingSphereLoader.loadImage("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400image.png", openingSphereMesh, 9400);
+     openingSphereMesh.primitive(al::Mesh::POINTS);
+    std::cout << "opening shell loaded with # vertices : " << openingSphereMesh.vertices().size() << std::endl;
+    // // INSTEAD OF WORKING WITH LOADED SPHERE, JUST GOING TO TRANSFER COLOR BUFFER
+    //openingSphereLoader.transferColors(openingSphereMesh, bodyMesh);
     
     
     
@@ -242,14 +255,29 @@ class MyApp : public al::App {
     //if (k.key() == '1') {
       // If the space key is pressed, we will trigger the sequencer
       //sequencer().playSequence();
+      if (k.key() >=49 && k.key() <= 54){
       sceneIndex = k.key()-48;
       std::cout << "pressed key: " << sceneIndex << std::endl;
+      }
     
     return true;
   }
 
   void onAnimate(double dt) override {
+
+    // SET SCENES AND TIME TRANSITIONS ///
      globalTime += dt;
+     sceneTime += dt;
+     if (globalTime == 118) {
+      sceneIndex = 2;
+      sceneTime = 0;
+     }
+     if (globalTime == 334) {
+      sceneIndex = 3;
+      sceneTime = 0;
+     }
+
+
     // Update the sequencer
     sequencer().update(globalTime); // XXX important to call this
     // std::cout << "global time: " << globalTime << std::endl;
@@ -259,11 +287,14 @@ class MyApp : public al::App {
 
     //// PROCESS MESH EFFECTS ////
     bodyEffectChain.process(bodyMesh, globalTime);
-    openingSphereEffectChain.process(openingSphereMesh, globalTime);
+    //openingSphereEffectChain.process(openingSphereMesh, globalTime);
     //openingSphereScatter.stop(true);
     bodyScatter.triggerOut(true, bodyMesh);
 
-    sphereAttractor.processThomas(openingSphereMesh, globalTime, 0.001);
+    //sphereAttractor.processThomas(openingSphereMesh, globalTime, 0.001);
+
+
+
 
     //MESH EFFECT SEQUENCING//
 
@@ -271,80 +302,89 @@ class MyApp : public al::App {
     
     float newAmplitude;
     float openingSphereFactor = 0.002;
-    if (globalTime<=moveInEvent){newAmplitude = 0;}
-    if (globalTime>=moveInEvent){
-      bodyScatter.setParams(5.0, 20.0);
-      bodyScatter.triggerIn(true);
+    // if (globalTime<=moveInEvent){newAmplitude = 0;}
+    // if (globalTime>=moveInEvent){
+    //   bodyScatter.setParams(5.0, 20.0);
+    //   bodyScatter.triggerIn(true);
 
-      //openingSphereScatter.stop(false);
-      //openingSphereScatter.setParams(5.0, 20.0);
-      //openingSphereScatter.triggerIn(true);
-      openingSphereMesh.scale(0.999-(openingSphereFactor/2));
-      openingSphereMesh.translate(0,(4.5*openingSphereFactor),(-4*openingSphereFactor));
-        if (globalTime<=stopRippleEvent) { //slows down rippling
-         newAmplitude = (rippleAmplitudeTrack1-((globalTime-moveInEvent) /(stopRippleEvent-moveInEvent)));
-        }
-        else{ newAmplitude = 0.0f; //once time is past ripple event, keep at 0 so amp doesn't go negative
-        }
-        bodyRippleY.setParams(5.0, newAmplitude , 4.0,'y'); //
-        bodyRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
+    //   //openingSphereScatter.stop(false);
+    //   //openingSphereScatter.setParams(5.0, 20.0);
+    //   //openingSphereScatter.triggerIn(true);
+    //   openingSphereMesh.scale(0.999-(openingSphereFactor/2));
+    //   openingSphereMesh.translate(0,(4.5*openingSphereFactor),(-4*openingSphereFactor));
+    //     if (globalTime<=stopRippleEvent) { //slows down rippling
+    //      newAmplitude = (rippleAmplitudeTrack1-((globalTime-moveInEvent) /(stopRippleEvent-moveInEvent)));
+    //     }
+    //     else{ newAmplitude = 0.0f; //once time is past ripple event, keep at 0 so amp doesn't go negative
+    //     }
+    //     bodyRippleY.setParams(5.0, newAmplitude , 4.0,'y'); //
+    //     bodyRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
 
-        openingSphereRippleY.setParams(5.0, newAmplitude , 4.0,'y'); 
-        openingSphereRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
+    //     openingSphereRippleY.setParams(5.0, newAmplitude , 4.0,'y'); 
+    //     openingSphereRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
 
 
 
-    }
+    // }
   
     //SCENE 2 -- from
 
   }
-  float shellIncrement;
+  //END OF ANIMATE CALLBACK 
+
+  //// INCREMENT VALUES FOR DRAW ////
+  float shellIncrementScene1;
+  float particleIncrementScene1;
   void onDraw(al::Graphics& g) override {
 
 
+
+    //// SCENE 1 START OF DRAW /////
+    if (sceneIndex == 1){
+
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
-    if (globalTime < shellTurnsWhiteEvent) {
-    shellIncrement += (globalTime / (shellTurnsWhiteEvent*60));
-    g.clear(shellIncrement);
-    }
-    if (globalTime >= shellTurnsWhiteEvent){
-    g.clear(1.0);
-    }
-    if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
-      shellIncrement -=  (globalTime / (shellTurnsWhiteEvent*60));
-      g.clear(1.0-shellIncrement);
-    }
+    g.clear(0);
+    // if (globalTime < shellTurnsWhiteEvent) {
+    // shellIncrementScene1 += (globalTime / (shellTurnsWhiteEvent*60));
+    // g.clear(shellIncrementScene1);
+    // }
+    // if (globalTime >= shellTurnsWhiteEvent){
+    // g.clear(1.0);
+    // }
+    // if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
+    //   shellIncrementScene1 -=  (globalTime / (shellTurnsWhiteEvent*60));
+    //   g.clear(1.0-shellIncrementScene1);
+    // }
   
 
 
-    //TESTING IMAGE LOADING
-    if (globalTime >= particlesAppearEvent) {
+    //PARTICLES SEQUENCE 1 
+    g.pointSize(2.0);
+    //g.color(1.0);
     g.meshColor();
-    openingSphereLoader.draw(g, openingSphereMesh);
-    g.draw(openingSphereMesh);
-  
-    }
+
+    // if (globalTime >= particlesAppearEvent) {
+    // g.meshColor();
+    // openingSphereLoader.draw(g, openingSphereMesh);
+    // g.draw(openingSphereMesh);
+    // }
     
-
-
-    
-
 
     // MAIN COLOR SEQUENCE //
     //color sequence
-    if(globalTime<=particlesAppearEvent){
-    g.color(0+(globalTime/particlesAppearEvent));}
-    else{
-      g.color(1.0);
-    }
-    g.pointSize( 2.0);
-    //g.color(1.0);
+    // if(globalTime<=particlesAppearEvent){
+    // g.color(0+(globalTime/particlesAppearEvent));}
+    // else{
+    //   //g.color(1.0);
+    // }
+
 
     g.draw(bodyMesh); //only draw once particles have dispersed
 
 
     //g.draw(boundarySphere);
+
+  } //// SCENE 1 END OF DRAW /////
 
 
 
