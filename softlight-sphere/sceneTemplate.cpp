@@ -27,15 +27,15 @@
 #include "softlight-sphere/eoys-mesh-fx/ripple.hpp"
 #include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxUtility.hpp"
-#include "softlight-sphere/meshMorph.hpp"
+//#include "softlight-sphere/meshMorph.hpp"
 #include "softlight-sphere/parseObj.hpp"
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/soundObject.hpp"
 #include "softlight-sphere/loadAudioScene.hpp"
 #include "softlight-sphere/eoys-mesh-fx/vfxMain.hpp"
 #include "softlight-sphere/eoys-mesh-fx/scatter.hpp"
-#include "softlight-sphere/imageToMesh.hpp"
-#include "softlight-sphere/imageToSphere.hpp"
+//#include "softlight-sphere/imageToMesh.hpp"
+//#include "softlight-sphere/imageToSphere.hpp"
 #include "softlight-sphere/attractors.hpp"
 #include "softlight-sphere/imageColorToMesh.hpp"
 
@@ -80,9 +80,6 @@ class MyApp : public al::App {
   //// START DECLARATIONS FOR SCENE 1 ////
 
   //MESHES//
-  //WrappedImage wrappedImage;
-  ImageSphereLoader openingSphereLoader;
-  al::VAOMesh openingSphereMesh;
   al::VAOMesh bodyMesh; 
   objParser newObjParser;
   al::Mesh boundarySphere;
@@ -94,12 +91,8 @@ class MyApp : public al::App {
   RippleEffect bodyRippleY;
   RippleEffect bodyRippleX;
   ScatterEffect bodyScatter;
-  //for opening sphere
-  VertexEffectChain openingSphereEffectChain;
-  RippleEffect openingSphereRippleY;
-  RippleEffect openingSphereRippleX;
-  ScatterEffect openingSphereScatter;
-  Attractor sphereAttractor;
+  Attractor bodyAttractor;
+
 
   //// END DECLARATIONS FOR SCENE 1 ////
 
@@ -200,13 +193,6 @@ class MyApp : public al::App {
     
     bodyMesh.update();
 
-
-    openingSphereLoader.loadImage("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400image.png", openingSphereMesh, 9400);
-     openingSphereMesh.primitive(al::Mesh::POINTS);
-    std::cout << "opening shell loaded with # vertices : " << openingSphereMesh.vertices().size() << std::endl;
-    // // INSTEAD OF WORKING WITH LOADED SPHERE, JUST GOING TO TRANSFER COLOR BUFFER
-    //openingSphereLoader.transferColors(openingSphereMesh, bodyMesh);
-    
     
     
 
@@ -226,18 +212,7 @@ class MyApp : public al::App {
     bodyEffectChain.pushBack(&bodyRippleX);
     bodyEffectChain.pushBack(&bodyScatter);
 
-    //for opening sphere
-    // openingSphereScatter.setBaseMesh(bodyMesh.vertices()); // set base mesh to be body so it moves inward towards it
-    //openingSphereScatter.setParams(1.0, 20.0);
-    //openingSphereScatter.setScatterVector(bodyMesh);
-    openingSphereRippleY.setParams(5.0, rippleAmplitudeTrack1, 4.0, 'y');
-    openingSphereRippleX.setParams(10.0, rippleAmplitudeTrack1, 6.0, 'x');
-
-
-
-    openingSphereEffectChain.pushBack(&openingSphereRippleY);
-    openingSphereEffectChain.pushBack(&openingSphereRippleY);
-    //openingSphereEffectChain.pushBack(&openingSphereScatter);
+  
     //bodyScatter.triggerOut(true, bodyMesh);
 
 
@@ -280,8 +255,8 @@ class MyApp : public al::App {
 
     // Update the sequencer
     sequencer().update(globalTime); // XXX important to call this
-    // std::cout << "global time: " << globalTime << std::endl;
-    //  fflush(stdout);
+    std::cout << "global time: " << globalTime << std::endl;
+     fflush(stdout);
     // should we call in the audio callback instead?
 
 
@@ -291,7 +266,7 @@ class MyApp : public al::App {
     //openingSphereScatter.stop(true);
     bodyScatter.triggerOut(true, bodyMesh);
 
-    //sphereAttractor.processThomas(openingSphereMesh, globalTime, 0.001);
+    bodyAttractor.processThomas(bodyMesh, globalTime, 0.001);
 
 
 
@@ -301,17 +276,13 @@ class MyApp : public al::App {
     //SCENE 1 -- from 
     
     float newAmplitude;
-    float openingSphereFactor = 0.002;
     // if (globalTime<=moveInEvent){newAmplitude = 0;}
     // if (globalTime>=moveInEvent){
     //   bodyScatter.setParams(5.0, 20.0);
     //   bodyScatter.triggerIn(true);
 
-    //   //openingSphereScatter.stop(false);
-    //   //openingSphereScatter.setParams(5.0, 20.0);
-    //   //openingSphereScatter.triggerIn(true);
-    //   openingSphereMesh.scale(0.999-(openingSphereFactor/2));
-    //   openingSphereMesh.translate(0,(4.5*openingSphereFactor),(-4*openingSphereFactor));
+  
+   
     //     if (globalTime<=stopRippleEvent) { //slows down rippling
     //      newAmplitude = (rippleAmplitudeTrack1-((globalTime-moveInEvent) /(stopRippleEvent-moveInEvent)));
     //     }
@@ -319,10 +290,6 @@ class MyApp : public al::App {
     //     }
     //     bodyRippleY.setParams(5.0, newAmplitude , 4.0,'y'); //
     //     bodyRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
-
-    //     openingSphereRippleY.setParams(5.0, newAmplitude , 4.0,'y'); 
-    //     openingSphereRippleX.setParams(10.0, newAmplitude, 4.0, 'x');
-
 
 
     // }
@@ -365,8 +332,6 @@ class MyApp : public al::App {
 
     // if (globalTime >= particlesAppearEvent) {
     // g.meshColor();
-    // openingSphereLoader.draw(g, openingSphereMesh);
-    // g.draw(openingSphereMesh);
     // }
     
 
