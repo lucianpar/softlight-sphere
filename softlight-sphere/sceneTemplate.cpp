@@ -42,9 +42,15 @@
 /* TO DO:
 
 *figure out setting up bodyMesh as a uv for rotation
+* set up newer sequence -
+* make main shell transition to body
 *ask karl about lighting
 *scene 1 and 2 graphics 
+
 - START ACTUALLY SEQUENCING BASED ON TRACKS 
+
+
+- change how the sequencer works
 - SET UP TRACK ANALYZER / STRING SEQUENCE GENERATOR 
 *have option for sphere configuration 
 
@@ -102,13 +108,41 @@ class MyApp : public al::App {
 
 
    ////DECLARE VALUES FOR EVENT TIMES////
+
+   //SCENE 1 
     float rippleAmplitudeTrack1 = 1.0;
 
-    float shellTurnsWhiteEvent = 2.0;
-    float moveInEvent = 5.0;
-    float stopRippleEvent = 10.0f;
-    float particlesAppearEvent = 4.0f;
+    float shellTurnsWhiteEvent = 7.0f;
+  
+    float particlesAppearEvent = 7.0f;
 
+    float particlesSlowRippleEvent = 10.0f;
+
+    float rippleSpeedUpEvent = 30.0f;
+
+    float stopSpeedUpEvent = 62.0f;
+
+    float startTurnShellBlack = 62.0f;
+
+    float stopTurnShellBlack = 64.0f;
+
+    float startAttractor = 70.0f;
+
+    float startScaleIn = 80.0f;
+
+    float startTransitionToBody = 85.0f;
+
+     float stopRippleEvent = 10.0f;
+
+
+     float moveInEvent = 70.0;
+
+
+
+
+  //SCENE 2
+
+    float track2Start = 119;
     
     // i.e. -- moveOutEvent1, StartRipplingEvent1
   
@@ -265,26 +299,33 @@ class MyApp : public al::App {
     //SCENE 2 -- from
 
   }
-
+  float shellIncrement;
   void onDraw(al::Graphics& g) override {
+
+
+    //THIS SEQUENCE MAKES THE SHELL APPEAR 
     if (globalTime < shellTurnsWhiteEvent) {
-    g.clear(0 + ((globalTime/shellTurnsWhiteEvent*60)));
+    shellIncrement += (globalTime / (shellTurnsWhiteEvent*60));
+    g.clear(shellIncrement);
     }
     if (globalTime >= shellTurnsWhiteEvent){
     g.clear(1.0);
     }
-    if (globalTime >= moveInEvent && globalTime <= moveInEvent + 2.0){
-      g.clear(1.0-(((globalTime-moveInEvent)/shellTurnsWhiteEvent*60)));
+    if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
+      shellIncrement -=  (globalTime / (shellTurnsWhiteEvent*60));
+      g.clear(1.0-shellIncrement);
     }
-    if (globalTime > moveInEvent + 2.0){
-      g.clear(0.0);
-    }
+  
 
 
     //TESTING IMAGE LOADING
+    if (globalTime >= particlesAppearEvent) {
     g.meshColor();
     openingSphereLoader.draw(g, openingSphereMesh);
     g.draw(openingSphereMesh);
+  
+    }
+    
 
 
     
@@ -299,6 +340,7 @@ class MyApp : public al::App {
     }
     g.pointSize( 2.0);
     //g.color(1.0);
+
     g.draw(bodyMesh); //only draw once particles have dispersed
 
 
@@ -355,6 +397,7 @@ int main() {
   //assign trajectories in the sequencer!!
 
   // UNCOMMENT AUDIO !!!!!!
+  // this logic doesn't work, will  have to change
   if (sceneIndex ==1){
   app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
     return al::Vec3f(
