@@ -81,6 +81,7 @@ class MyApp : public al::App {
 
   //MESHES//
   al::VAOMesh bodyMesh; 
+  al::VAOMesh bodyCloud;
   objParser newObjParser;
   al::Mesh boundarySphere;
   NewColorBuffer scene1ColorBuffer;
@@ -192,8 +193,9 @@ class MyApp : public al::App {
 
     scene1ColorBuffer.imageToNewMesh("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400image.png", bodyMesh);
 
-    
     bodyMesh.update();
+
+    //bodyCloud 
 
     
     
@@ -203,7 +205,7 @@ class MyApp : public al::App {
     ////SET MESH EFFECTS////
     //for body
     bodyScatter.setBaseMesh(bodyMesh.vertices());
-    bodyScatter.setParams(1.0, 30.0);
+    bodyScatter.setParams(20.0, 40.0);
     bodyScatter.setScatterVector(bodyMesh);
     bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
     bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
@@ -279,25 +281,29 @@ class MyApp : public al::App {
 
     //SCENE 1 -- from 
 
-    // bodyAttractor.processThomas(bodyMesh, globalTime, 0.01);
+    // if (globalTime == 1){
+    //   bodyScatter.triggerOut(true, bodyMesh);
+    // }
+
+    // bodyAttractor.processThomas(bodyMesh, globalTime, 0.0001);
     // bodyMesh.scale(1.01);
     
     float newAmplitude;
-    if (globalTime >= particlesSlowRippleEvent && globalTime <= rippleSpeedUpEvent) {
-      rippleAmplitudeScene1 = ((globalTime-particlesSlowRippleEvent)/(rippleSpeedUpEvent-particlesSlowRippleEvent));
-      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
-    }
-    if (globalTime>=rippleSpeedUpEvent && globalTime <= stopSpeedUpEvent){
-      rippleSpeedXScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
-      rippleSpeedYScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
-      rippleSpeedZScene1 = 0.3 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent))); //.0015;
-      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
+    // if (globalTime >= particlesSlowRippleEvent && globalTime <= rippleSpeedUpEvent) {
+    //   rippleAmplitudeScene1 = ((globalTime-particlesSlowRippleEvent)/(rippleSpeedUpEvent-particlesSlowRippleEvent))*3;
+    //   bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+    //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+    //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
+    // }
+    // if (globalTime>=rippleSpeedUpEvent && globalTime <= stopSpeedUpEvent){
+    //   rippleSpeedXScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
+    //   rippleSpeedYScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
+    //   rippleSpeedZScene1 = 0.3 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent))); //.0015;
+    //   bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+    //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+    //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
 
-    }
+    // }
     
     // if (globalTime>=10 && globalTime <= 20){
     //   bodyRippleY.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
@@ -306,6 +312,11 @@ class MyApp : public al::App {
     //   //bodyAttractor.processThomas(bodyMesh, globalTime, 0.00001);
     // }
     if(globalTime>= moveInEvent){
+      rippleAmplitudeScene1 = 1.0-((globalTime - moveInEvent)/moveInEvent+10.0);
+      bodyScatter.setParams(10.0, 20.0);
+      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
+      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
+      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
       bodyScatter.triggerIn(true);
     }
     
@@ -320,6 +331,7 @@ class MyApp : public al::App {
   //// INCREMENT VALUES FOR DRAW ////
   float shellIncrementScene1;
   float particleIncrementScene1;
+  float pointSize = 3.0;
   void onDraw(al::Graphics& g) override {
 
 
@@ -329,21 +341,26 @@ class MyApp : public al::App {
 
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
     if (globalTime < shellTurnsWhiteEvent) {
-    shellIncrementScene1 += (globalTime / (shellTurnsWhiteEvent*60));
-    g.clear(shellIncrementScene1);
+    shellIncrementScene1 = ((globalTime) / (shellTurnsWhiteEvent));
+    g.clear(1.0-shellIncrementScene1);
     }
     if (globalTime >= shellTurnsWhiteEvent){
-    g.clear(1.0);
+    g.clear(0.0);
     }
-    if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
-      shellIncrementScene1 -=  (globalTime / (shellTurnsWhiteEvent*60));
-      g.clear(1.0-shellIncrementScene1);
-    }
+    // if (globalTime >= startTurnShellBlack && globalTime<= (startTurnShellBlack + 3)){
+    //   shellIncrementScene1 -=  ((globalTime-startTurnShellBlack)/ (startTurnShellBlack + 3));
+    //   g.clear(1.0-shellIncrementScene1);
+    // }
+    // if (globalTime >= (startTurnShellBlack+3)){
+    //   //shellIncrementScene1 = 
+    //   g.clear(0.0);
+    // }
   
 
 
     //PARTICLES SEQUENCE 1 
-    g.pointSize(5.0);
+    
+    g.pointSize(pointSize);
     //g.color(1.0);
     //g.meshColor();
 
