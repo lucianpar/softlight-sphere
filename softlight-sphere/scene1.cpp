@@ -53,7 +53,7 @@ public:
   RippleEffect mainRippleZ;
 
 
-   VertexEffectChain bodyEffectChain;;
+  VertexEffectChain bodyEffectChain;;
   ScatterEffect bodyScatter;
 
     // Global Time
@@ -69,6 +69,8 @@ public:
     float rippleSpeedXScene1 = 0.2;
     float rippleSpeedYScene1 = 0.2;
     float rippleSpeedZScene1 = 0.3;
+    float attractorSpeedScene1;
+    float startingBodyAlpha = 0.00001;
 
     float shellTurnsWhiteEvent = 15.0f;
   
@@ -84,7 +86,13 @@ public:
 
     float stopTurnShellBlack = 64.0f;
 
-    float startAttractor = 70.0f;
+    float bodyCloudAppear = 65.0f;
+
+    float bodyCloudMoveOut = 70.0f;
+
+    //float startAttractor = 70.0f;
+
+  
 
     float moveInEvent = 85.0;
 
@@ -99,22 +107,30 @@ public:
         nav().pos(al::Vec3d(0, 0, 0)); // Move the camera back for view
 
         //initialize body 
-        // newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
+        newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
+        bodyMesh.translate(0,3.5,-4);
+        for (int i = 0; i < bodyMesh.vertices().size(); ++i) {
+            bodyMesh.color(1.0, 0.6, 0.3, startingBodyAlpha); // Orange particles with alpha transparency
+        }
+        bodyMesh.primitive(al::Mesh::POINTS);
         // bodyMesh.update();
 
         // Initialize attractor
-        al::addSphere(attractorMesh, 10.0f, 200, 200);
+        al::addSphere(attractorMesh, 10.0f, 100, 100);
         attractorMesh.primitive(al::Mesh::LINES);
         for (int i = 0; i < attractorMesh.vertices().size(); ++i) {
             attractorMesh.color(1.0, 0.6, 0.2, 0.4); // Orange particles with alpha transparency
         }
-        attractorMesh.update();
+        std::cout << "made attractor sphere with vertices # : " << attractorMesh.vertices().size() << std::endl;
+        // attractorMesh.update();
+
+
 
         //effect setting
 
-        // bodyScatter.setBaseMesh(attractorMesh.vertices());
-        // bodyScatter.setParams(20.0, 40.0);
-        // bodyScatter.setScatterVector(attractorMesh);
+        bodyScatter.setBaseMesh(bodyMesh.vertices());
+        bodyScatter.setParams(0.5, 20.0);
+        bodyScatter.setScatterVector(bodyMesh);
         // mainRippleX.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
         // mainRippleX.setParams(rippleSpeedXScene1, 0, 6.0, 'x');
         // mainRippleX.setParams(rippleSpeedXScene1, 0, 5.0, 'z');
@@ -123,7 +139,16 @@ public:
         // mainEffectChain.pushBack(&mainRippleY);
         // mainEffectChain.pushBack(&mainRippleZ);
 
-        // bodyEffectChain.pushBack(&bodyScatter);
+        bodyEffectChain.pushBack(&bodyScatter);
+
+        bodyScatter.triggerOut(true, bodyMesh);
+
+         bodyMesh.update();
+
+         attractorMesh.update();
+
+
+
         
         // Compile Shader
         glowShader.compile(R"(
@@ -165,10 +190,13 @@ public:
         )");
         glowShader.link();
     }
-
+    float bodyAlphaIncScene1 = 0.0;
     void onAnimate(double dt) override {
         globalTime += dt;
         sceneTime += dt;
+        std::cout << sceneTime << std::endl;
+
+  
         
 
         // Apply Attractor Effect
@@ -177,19 +205,46 @@ public:
         }
 
         if (sceneTime >= particlesSlowRippleEvent && sceneTime <= rippleSpeedUpEvent) {
-          mainAttractor.processThomas(attractorMesh, sceneTime, 0.00005);
+          attractorSpeedScene1 = 0.00005;
+          mainAttractor.processThomas(attractorMesh, sceneTime, attractorSpeedScene1);
         }
 
          if (sceneTime>=rippleSpeedUpEvent && sceneTime <= stopSpeedUpEvent){
-          mainAttractor.processThomas(attractorMesh, sceneTime, 0.0005);
+          attractorSpeedScene1 = 0.00015;
+          mainAttractor.processThomas(attractorMesh, sceneTime, attractorSpeedScene1);
          }
           if (sceneTime>=stopSpeedUpEvent && sceneTime <= moveInEvent){
-          mainAttractor.processThomas(attractorMesh, sceneTime, 0.00001);
+          attractorSpeedScene1 = 0.00001;
+          mainAttractor.processThomas(attractorMesh, sceneTime, attractorSpeedScene1);
           
 
          }
 
+
+
         attractorMesh.update();
+        //body mesh effects
+      if (sceneTime >=bodyCloudAppear) {
+        if (bodyAlphaIncScene1 < 1.0){
+        bodyAlphaIncScene1 +=0.0001;
+        for (int i = 0; i < bodyMesh.vertices().size(); ++i) {
+              al::Color currentColor = bodyMesh.colors()[i];
+              currentColor.a = startingBodyAlpha + bodyAlphaIncScene1;  // Increment alpha only
+              bodyMesh.colors()[i] = currentColor;
+              } 
+          // bodyMesh.update();
+            }
+          }
+      if (sceneTime >= bodyCloudMoveOut){
+        bodyScatter.setParams(8.0, 20.0);
+        bodyScatter.triggerIn(true);
+      }
+
+
+
+
+      bodyEffectChain.process(bodyMesh, sceneTime);
+      bodyMesh.update();
 
 
 
@@ -212,7 +267,6 @@ public:
     if (sceneTime >= shellTurnsWhiteEvent){
     g.clear(0.0);
     }
-        //g.clear(0.0, 0.0, 0.0, 1.0);
         g.depthTesting(true);
         g.blending(true);
         g.blendAdd(); // Additive blending for glowing effect
@@ -224,6 +278,10 @@ public:
         g.pointSize(pointSize);
         g.meshColor();
         g.draw(attractorMesh);
+       
+    if (sceneTime >= bodyCloudAppear){
+    g.draw(bodyMesh);
+    }
         glowShader.end();
     }
 
