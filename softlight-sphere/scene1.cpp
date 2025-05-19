@@ -44,11 +44,16 @@ class MyApp : public al::App {
 public:
     // Meshes and Effects
     al::VAOMesh attractorMesh;
+    al::VAOMesh bodyMesh;
+    objParser newObjParser;
     Attractor mainAttractor;
-    VertexEffectChain bodyEffectChain;
-  RippleEffect bodyRippleY;
-  RippleEffect bodyRippleX;
-  RippleEffect bodyRippleZ;
+    VertexEffectChain mainEffectChain;
+  RippleEffect mainRippleY;
+  RippleEffect mainRippleX;
+  RippleEffect mainRippleZ;
+
+
+   VertexEffectChain bodyEffectChain;;
   ScatterEffect bodyScatter;
 
     // Global Time
@@ -65,9 +70,9 @@ public:
     float rippleSpeedYScene1 = 0.2;
     float rippleSpeedZScene1 = 0.3;
 
-    float shellTurnsWhiteEvent = 7.0f;
+    float shellTurnsWhiteEvent = 15.0f;
   
-    float particlesAppearEvent = 7.0f;
+    float particlesAppearEvent = 15.0f;
 
     float particlesSlowRippleEvent = 10.0f;
 
@@ -93,7 +98,11 @@ public:
     void onCreate() override {
         nav().pos(al::Vec3d(0, 0, 0)); // Move the camera back for view
 
-        // Initialize Mesh
+        //initialize body 
+        // newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
+        // bodyMesh.update();
+
+        // Initialize attractor
         al::addSphere(attractorMesh, 10.0f, 200, 200);
         attractorMesh.primitive(al::Mesh::LINES);
         for (int i = 0; i < attractorMesh.vertices().size(); ++i) {
@@ -103,12 +112,18 @@ public:
 
         //effect setting
 
-        bodyScatter.setBaseMesh(attractorMesh.vertices());
-        bodyScatter.setParams(20.0, 40.0);
-        bodyScatter.setScatterVector(attractorMesh);
-        bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-        bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-        bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 5.0, 'z');
+        // bodyScatter.setBaseMesh(attractorMesh.vertices());
+        // bodyScatter.setParams(20.0, 40.0);
+        // bodyScatter.setScatterVector(attractorMesh);
+        // mainRippleX.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
+        // mainRippleX.setParams(rippleSpeedXScene1, 0, 6.0, 'x');
+        // mainRippleX.setParams(rippleSpeedXScene1, 0, 5.0, 'z');
+
+        // mainEffectChain.pushBack(&mainRippleX);
+        // mainEffectChain.pushBack(&mainRippleY);
+        // mainEffectChain.pushBack(&mainRippleZ);
+
+        // bodyEffectChain.pushBack(&bodyScatter);
         
         // Compile Shader
         glowShader.compile(R"(
@@ -154,16 +169,42 @@ public:
     void onAnimate(double dt) override {
         globalTime += dt;
         sceneTime += dt;
+        
 
         // Apply Attractor Effect
-        mainAttractor.processThomas(attractorMesh, sceneTime, 0.0001);
+        if (sceneTime < particlesSlowRippleEvent){
+        mainAttractor.processThomas(attractorMesh, sceneTime, 0);
+        }
+
+        if (sceneTime >= particlesSlowRippleEvent && sceneTime <= rippleSpeedUpEvent) {
+          mainAttractor.processThomas(attractorMesh, sceneTime, 0.00005);
+        }
+
+         if (sceneTime>=rippleSpeedUpEvent && sceneTime <= stopSpeedUpEvent){
+          mainAttractor.processThomas(attractorMesh, sceneTime, 0.0005);
+         }
+          if (sceneTime>=stopSpeedUpEvent && sceneTime <= moveInEvent){
+          mainAttractor.processThomas(attractorMesh, sceneTime, 0.00001);
+          
+
+         }
+
         attractorMesh.update();
+
+
+
+
+
+
+
+        
     }
 
      float shellIncrementScene1;
   float particleIncrementScene1;
 
     void onDraw(al::Graphics& g) override {
+
       if (sceneTime < shellTurnsWhiteEvent) {
     shellIncrementScene1 = ((sceneTime) / (shellTurnsWhiteEvent));
     g.clear(1.0-shellIncrementScene1);
@@ -178,7 +219,7 @@ public:
 
         // Use Custom Glow Shader
         glowShader.begin();
-        glowShader.uniform("u_time", (float)globalTime);
+        glowShader.uniform("u_time", (float)sceneTime);
         glowShader.uniform("u_resolution", al::Vec2f(width(), height()));
         g.pointSize(pointSize);
         g.meshColor();
