@@ -228,8 +228,7 @@ class MyApp : public al::App {
   float particleIncrementScene1;
   float pointSize = 3.0;
   void onDraw(al::Graphics& g) override {
-    g.depthTesting(true);
-
+    
 
 
     //// SCENE 1 START OF DRAW /////
