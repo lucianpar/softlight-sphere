@@ -35,6 +35,15 @@
 #include "softlight-sphere/attractors.hpp"
 #include "softlight-sphere/imageColorToMesh.hpp"
 
+
+
+/* scene 1 to do 
+adjust sequencing 
+put into container 
+fix shader???? - ask karl
+fix ripple speed and scaling
+*/
+
 // Shader Program
 al::ShaderProgram glowShader;
 
@@ -104,7 +113,8 @@ public:
     }
 
     void onCreate() override {
-        nav().pos(al::Vec3d(0, 0, 0)); // Move the camera back for view
+        nav().pos(al::Vec3d(0, 0, 0)); 
+        sequencer().playSequence();
 
         //initialize body 
         newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
@@ -117,7 +127,7 @@ public:
 
         // Initialize attractor
         al::addSphere(attractorMesh, 10.0f, 100, 100);
-        attractorMesh.primitive(al::Mesh::LINES);
+        attractorMesh.primitive(al::Mesh::LINES); //switch back to lines
         for (int i = 0; i < attractorMesh.vertices().size(); ++i) {
             attractorMesh.color(1.0, 0.6, 0.2, 0.4); // Orange particles with alpha transparency
         }
@@ -131,13 +141,13 @@ public:
         bodyScatter.setBaseMesh(bodyMesh.vertices());
         bodyScatter.setParams(0.5, 20.0);
         bodyScatter.setScatterVector(bodyMesh);
-        // mainRippleX.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
-        // mainRippleX.setParams(rippleSpeedXScene1, 0, 6.0, 'x');
-        // mainRippleX.setParams(rippleSpeedXScene1, 0, 5.0, 'z');
+        mainRippleX.setParams(4, 0.2, 4.0, 'y');
+        mainRippleX.setParams(4, 0.2, 6.0, 'x');
+        mainRippleX.setParams(4, 0.2, 5.0, 'z');
 
-        // mainEffectChain.pushBack(&mainRippleX);
-        // mainEffectChain.pushBack(&mainRippleY);
-        // mainEffectChain.pushBack(&mainRippleZ);
+        mainEffectChain.pushBack(&mainRippleX);
+        mainEffectChain.pushBack(&mainRippleY);
+        mainEffectChain.pushBack(&mainRippleZ);
 
         bodyEffectChain.pushBack(&bodyScatter);
 
@@ -151,50 +161,58 @@ public:
 
         
         // Compile Shader
-        glowShader.compile(R"(
-            #version 330 core
-            in vec3 vPosition;
-            in vec4 vColor;
-            out vec4 fragColor;
-            uniform float u_time;
-            uniform vec2 u_resolution;
 
-            float glow(float distance, float radius, float intensity) {
-                return exp(-distance * distance * intensity) * radius;
-            }
 
-            void main() {
-                vec2 uv = gl_FragCoord.xy / u_resolution;
-                vec2 center = vec2(0.5, 0.5);
-                float dist = length(uv - center);
-                float intensity = glow(dist, 0.7, 10.0);
-                fragColor = vColor * intensity;
-                fragColor.a = intensity * vColor.a;
-            }
-        )", R"(
-            #version 330 core
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec4 aColor;
-            out vec3 vPosition;
-            out vec4 vColor;
-            uniform mat4 u_model;
-            uniform mat4 u_view;
-            uniform mat4 u_projection;
+        //shader currently not working
+    glowShader.compile(R"(
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec4 aColor;
+    
+    out vec4 vColor;
+    out vec2 fragUV;
+    
+    uniform highp mat4 u_model;
+    uniform highp mat4 u_view;
+    uniform highp mat4 u_projection;
 
-            void main() {
-                vPosition = aPos;
-                vColor = aColor;
-                gl_Position = u_projection * u_view * u_model * vec4(aPos, 1.0);
-                gl_PointSize = 8.0; // Size of each particle
-            }
-        )");
-        glowShader.link();
+    void main() {
+        vColor = aColor;
+        gl_Position = u_projection * u_view * u_model * vec4(aPos, 1.0);
+        fragUV = (gl_Position.xy / gl_Position.w) * 0.5 + 0.5; 
+        gl_PointSize = 12.0;
+    }
+)", 
+
+R"(
+    #version 330 core
+    in vec4 vColor;
+    in vec2 fragUV;
+    out vec4 fragColor;
+    
+    uniform highp float u_time;
+    uniform highp vec2 u_resolution;
+    uniform highp vec2 u_center;
+
+    void main() {
+        // Ensure the uniform is actively used
+        float dist = length(fragUV - u_center);
+        float glowIntensity = exp(-dist * dist * 10.0); 
+
+        // Apply glow effect
+        fragColor = vColor * glowIntensity;
+        fragColor.a = vColor.a * glowIntensity;
+    }
+)");
+glowShader.link();
+
+
     }
     float bodyAlphaIncScene1 = 0.0;
     void onAnimate(double dt) override {
         globalTime += dt;
         sceneTime += dt;
-        std::cout << sceneTime << std::endl;
+        //std::cout << sceneTime << std::endl;
 
   
         
@@ -220,6 +238,12 @@ public:
 
          }
 
+         if (sceneTime>=stopSpeedUpEvent){
+          attractorSpeedScene1 = 0.000001;
+          mainAttractor.processThomas(attractorMesh, sceneTime, attractorSpeedScene1);
+          mainEffectChain.process(attractorMesh, sceneTime);
+         }
+
 
 
         attractorMesh.update();
@@ -235,10 +259,14 @@ public:
           // bodyMesh.update();
             }
           }
-      if (sceneTime >= bodyCloudMoveOut){
-        bodyScatter.setParams(8.0, 20.0);
+      if (sceneTime >= moveInEvent){
+        attractorSpeedScene1 = 0.0000001;
+          mainAttractor.processThomas(attractorMesh, sceneTime, attractorSpeedScene1);
+        bodyScatter.setParams(5.0, 20.0);
         bodyScatter.triggerIn(true);
-      }
+        attractorMesh.scale(0.9995);
+        attractorMesh.translate(0,(3.5)*((sceneTime-moveInEvent)/(moveInEvent - 118)),(-4)*((sceneTime-moveInEvent)/(moveInEvent - 118)));
+        }
 
 
 
@@ -267,14 +295,15 @@ public:
     if (sceneTime >= shellTurnsWhiteEvent){
     g.clear(0.0);
     }
-        g.depthTesting(true);
-        g.blending(true);
+    g.depthTesting(true);
+    g.blending(true);
         g.blendAdd(); // Additive blending for glowing effect
 
         // Use Custom Glow Shader
         glowShader.begin();
         glowShader.uniform("u_time", (float)sceneTime);
-        glowShader.uniform("u_resolution", al::Vec2f(width(), height()));
+    glowShader.uniform("u_resolution", al::Vec2f(width(), height()));
+    glowShader.uniform("u_center", al::Vec3f(0.0, 0.0, 0.0)); // Center of the glow effect
         g.pointSize(pointSize);
         g.meshColor();
         g.draw(attractorMesh);
