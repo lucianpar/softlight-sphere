@@ -191,7 +191,7 @@ class MyApp : public al::App {
     newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
     bodyMesh.translate(0,3.5,-4);
 
-    scene1ColorBuffer.imageToNewMesh("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400image.png", bodyMesh);
+    scene1ColorBuffer.imageToNewMesh("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400-white.png", bodyMesh);
 
     bodyMesh.update();
 
@@ -243,7 +243,7 @@ class MyApp : public al::App {
     
     return true;
   }
-
+ float newSpeed = 0.0f;;
   void onAnimate(double dt) override {
 
     // SET SCENES AND TIME TRANSITIONS ///
@@ -289,13 +289,22 @@ class MyApp : public al::App {
     // bodyMesh.scale(1.01);
     
     float newAmplitude;
-    // if (globalTime >= particlesSlowRippleEvent && globalTime <= rippleSpeedUpEvent) {
+    // newSpeed;
+    if (globalTime < particlesSlowRippleEvent){
+      bodyAttractor.processThomas(bodyMesh, globalTime, 0);
+    }
+    if (globalTime >= particlesSlowRippleEvent && globalTime <= rippleSpeedUpEvent) {
+
+    newSpeed = 0.00001;
+    bodyAttractor.processThomas(bodyMesh, globalTime, newSpeed);
     //   rippleAmplitudeScene1 = ((globalTime-particlesSlowRippleEvent)/(rippleSpeedUpEvent-particlesSlowRippleEvent))*3;
     //   bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
     //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
     //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
-    // }
-    // if (globalTime>=rippleSpeedUpEvent && globalTime <= stopSpeedUpEvent){
+    }
+     if (globalTime>=rippleSpeedUpEvent && globalTime <= stopSpeedUpEvent){
+       newSpeed += 0.000001;
+    bodyAttractor.processThomas(bodyMesh, globalTime, newSpeed);
     //   rippleSpeedXScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
     //   rippleSpeedYScene1 = 0.2 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
     //   rippleSpeedZScene1 = 0.3 + (((globalTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent))); //.0015;
@@ -303,17 +312,20 @@ class MyApp : public al::App {
     //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
     //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
 
-    // }
-    
-    // if (globalTime>=10 && globalTime <= 20){
-    //   bodyRippleY.setParams(rippleSpeedYScene1, 0, 4.0, 'y');
-    //   bodyRippleX.setParams(rippleSpeedXScene1, 0, 6.0, 'x');
-    //   bodyRippleZ.setParams(rippleSpeedZScene1, 0, 5.0, 'z');
-    //   //bodyAttractor.processThomas(bodyMesh, globalTime, 0.00001);
-    // }
+    }
+    if (globalTime >= stopSpeedUpEvent && globalTime <= moveInEvent){
+        if (newSpeed >= 0){
+        newSpeed -= 0.0001;
+        }
+        bodyAttractor.processThomas(bodyMesh, globalTime, newSpeed);
+    }
+  
     if(globalTime>= moveInEvent){
+      
+      if (rippleAmplitudeScene1 > 0.0f){
       rippleAmplitudeScene1 = 1.0-((globalTime - moveInEvent)/moveInEvent+10.0);
-      bodyScatter.setParams(10.0, 20.0);
+      }
+      bodyScatter.setParams(3.0, 10.0);
       bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
       bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
       bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
@@ -364,10 +376,10 @@ class MyApp : public al::App {
     //g.color(1.0);
     //g.meshColor();
 
-    if (globalTime >= particlesAppearEvent) {
+    //if (globalTime >= particlesAppearEvent) {
     g.meshColor();
     g.draw(bodyMesh);
-    }
+   // }
     
 
     // MAIN COLOR SEQUENCE //
