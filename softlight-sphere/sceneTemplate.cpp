@@ -450,26 +450,26 @@ int main() {
 
   // UNCOMMENT AUDIO !!!!!!
   // this logic doesn't work, will  have to change
-  if (sceneIndex ==1){
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (sin(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * cos(b * p.y)), 
-            p.z
-        );
-  });
-  }
-  if (sceneIndex == 2) {
-  app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[1][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
-    return al::Vec3f(
-    //body of lambda logic. will replace this will header calls
-           (cos(a * p.y) + c * cos(a * p.x)),
-          (sin(b * p.x) + d * sin(b * p.y)), 
-            p.z
-        );
-  });
-  }
+  // if (sceneIndex ==1){
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[0][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (sin(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * cos(b * p.y)), 
+  //           p.z
+  //       );
+  // });
+  // }
+  // if (sceneIndex == 2) {
+  // app.sequencer().add<SoundObject>(0, 44000).set( 0, 0, 0, 0.5,soundObjectVisual ,(songFiles[1][0]).c_str(), [&](double t, const al::Vec3f& p) -> al::Vec3f { 
+  //   return al::Vec3f(
+  //   //body of lambda logic. will replace this will header calls
+  //          (cos(a * p.y) + c * cos(a * p.x)),
+  //         (sin(b * p.x) + d * sin(b * p.y)), 
+  //           p.z
+  //       );
+  // });
+  // }
 
 
   app.start();

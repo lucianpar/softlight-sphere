@@ -80,20 +80,22 @@ class MyApp : public al::App {
   //// START DECLARATIONS FOR SCENE 1 ////
 
   //MESHES//
-  al::VAOMesh bodyMesh; 
-  al::VAOMesh bodyCloud;
-  objParser newObjParser;
-  al::Mesh boundarySphere;
-  NewColorBuffer scene1ColorBuffer;
+  al::VAOMesh blobMesh; 
+  // al::VAOMesh bodyCloud;
+  // objParser newObjParser;
+  // al::Mesh boundarySphere;
+  // NewColorBuffer scene1ColorBuffer;
+
+
+  std::vector<al::Nav> blobs;
+  std::vector<al::Vec3f> velocity;
+  std::vector<al::Vec3f> force;
+  float scene2Boundary = 10.0f;
+
 
   //MESH EFFECTS//
   //for body 
-  VertexEffectChain bodyEffectChain;
-  RippleEffect bodyRippleY;
-  RippleEffect bodyRippleX;
-  RippleEffect bodyRippleZ;
-  ScatterEffect bodyScatter;
-  Attractor bodyAttractor;
+  
 
 
   //// END DECLARATIONS FOR SCENE 1 ////
@@ -112,28 +114,13 @@ class MyApp : public al::App {
    ////DECLARE VALUES FOR EVENT TIMES////
 
    //SCENE 1 
-    float rippleAmplitudeScene1 = 0.0;
-    float rippleSpeedXScene1 = 0.2;
-    float rippleSpeedYScene1 = 0.2;
-    float rippleSpeedZScene1 = 0.3;
+    
+    
+    //karl code -- need to figure out where to put this
 
-    float shellTurnsWhiteEvent = 7.0f;
-  
-    float particlesAppearEvent = 7.0f;
-
-    float particlesSlowRippleEvent = 10.0f;
-
-    float rippleSpeedUpEvent = 30.0f;
-
-    float stopSpeedUpEvent = 62.0f;
-
-    float startTurnShellBlack = 62.0f;
-
-    float stopTurnShellBlack = 64.0f;
-
-    float startAttractor = 70.0f;
-
-    float moveInEvent = 85.0;
+    al::Vec3f randomVec3f(float scale) {
+      return al::Vec3f(al::rnd::uniformS(), al::rnd::uniformS(), al::rnd::uniformS()) * scale;
+    }
 
   
 
@@ -163,7 +150,34 @@ class MyApp : public al::App {
     nav().pos(al::Vec3d(0, 0, 0));  // Set the camera to view the scene
     sequencer().playSequence();
 
+    // al::Vec3f randomVec3f(float scale) {
+    //   return Vec3f(rnd::uniformS(), rnd::uniformS(), rnd::uniformS()) * scale;
+    // }
+
     // //INITIALIZE LIGHTING 
+
+    nav().pos(0, 0, 0);
+    addSphere(blobMesh, 0.5, 50, 50);
+    blobMesh.primitive(al::Mesh::TRIANGLES);
+
+    blobMesh.generateNormals();
+
+    // blobMesh.update();
+
+    for (int b = 0; b < 4; ++b) {
+      al::Nav p;
+      p.pos() = randomVec3f(5);
+      p.quat()
+          .set(al::rnd::uniformS(), al::rnd::uniformS(), al::rnd::uniformS(),
+               al::rnd::uniformS())
+          .normalize();
+      // p.set(randomVec3f(5), randomVec3f(1));
+      blobs.push_back(p);
+      velocity.push_back(al::Vec3f(0));
+      force.push_back(al::Vec3f(0));
+    }
+
+    blobMesh.update();
    
 
 
@@ -174,8 +188,8 @@ class MyApp : public al::App {
 
 
     //BOUNDARY MESH
-    addSphere(boundarySphere, 7.5); 
-    boundarySphere.primitive((al::Mesh::LINES));
+    // addSphere(boundarySphere, 7.5); 
+    // boundarySphere.primitive((al::Mesh::LINES));
 
 
     ///////
@@ -186,40 +200,7 @@ class MyApp : public al::App {
     ////CREATE MY MESHES////
 
     // NEED TO RESET TO RELATIVE PATHS, NOT HARDCODED
-    bodyMesh.primitive(al::Mesh:: POINTS);
-
-    newObjParser.parse("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/BaseMesh.obj", bodyMesh);
-    bodyMesh.translate(0,3.5,-4);
-
-    scene1ColorBuffer.imageToNewMesh("/Users/lucian/Desktop/201B/allolib_playground/softlight-sphere/assets/9400-white.png", bodyMesh);
-
-    bodyMesh.update();
-
-    //bodyCloud 
-
     
-    
-
-
-
-    ////SET MESH EFFECTS////
-    //for body
-    bodyScatter.setBaseMesh(bodyMesh.vertices());
-    bodyScatter.setParams(20.0, 40.0);
-    bodyScatter.setScatterVector(bodyMesh);
-    bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-    bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-    bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 5.0, 'z');
-
-
-
-    bodyEffectChain.pushBack(&bodyRippleY);
-    bodyEffectChain.pushBack(&bodyRippleX);
-    bodyEffectChain.pushBack(&bodyRippleZ);
-    bodyEffectChain.pushBack(&bodyScatter);
-
-  
-    bodyScatter.triggerOut(true, bodyMesh);
 
 
 
@@ -243,7 +224,7 @@ class MyApp : public al::App {
     
     return true;
   }
- float newSpeed = 0.0f;;
+//  float newSpeed = 0.0f;
   void onAnimate(double dt) override {
 
     // SET SCENES AND TIME TRANSITIONS ///
@@ -275,6 +256,24 @@ class MyApp : public al::App {
     //bodyAttractor.processThomas(bodyMesh, globalTime, 0.001);
 
 
+    for (int k = 0; k < blobs.size(); ++k) {
+      
+      al::Vec3f a = blobs[k].pos();
+      al::Vec3f origin = al::Vec3f(0,0,0);
+      
+      al::Vec3f displacement = origin - a;
+      float distance = displacement.mag();
+      al::Vec3f f = displacement.normalize() * (distance - 1);
+      force[k] +=f;
+
+
+
+      }
+  
+
+// velocity[k] += force[k] * dt;
+// blobs[k].pos() += velocity[k] * dt;
+    
 
 
     //MESH EFFECT SEQUENCING//
@@ -290,50 +289,7 @@ class MyApp : public al::App {
     
     float newAmplitude;
     // newSpeed;
-    if (sceneTime < particlesSlowRippleEvent){
-      bodyAttractor.processThomas(bodyMesh, sceneTime, 0);
-    }
-    if (sceneTime >= particlesSlowRippleEvent && sceneTime <= rippleSpeedUpEvent) {
-
-    newSpeed = 0.00001;
-    bodyAttractor.processThomas(bodyMesh, sceneTime, newSpeed);
-    //   rippleAmplitudeScene1 = ((sceneTime-particlesSlowRippleEvent)/(rippleSpeedUpEvent-particlesSlowRippleEvent))*3;
-    //   bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-    //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-    //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
-    }
-     if (sceneTime>=rippleSpeedUpEvent && sceneTime <= stopSpeedUpEvent){
-       newSpeed += 0.000001;
-    bodyAttractor.processThomas(bodyMesh, sceneTime, newSpeed);
-    //   rippleSpeedXScene1 = 0.2 + (((sceneTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
-    //   rippleSpeedYScene1 = 0.2 + (((sceneTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent)));
-    //   rippleSpeedZScene1 = 0.3 + (((sceneTime-rippleSpeedUpEvent) / (stopSpeedUpEvent - rippleSpeedUpEvent))); //.0015;
-    //   bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-    //   bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-    //   bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
-
-    }
-    if (sceneTime >= stopSpeedUpEvent && sceneTime <= moveInEvent){
-        if (newSpeed >= 0){
-        newSpeed -= 0.0001;
-        }
-        bodyAttractor.processThomas(bodyMesh, sceneTime, newSpeed);
-    }
-  
-    if(sceneTime>= moveInEvent){
-      
-      if (rippleAmplitudeScene1 > 0.0f){
-      rippleAmplitudeScene1 = 1.0-((sceneTime - moveInEvent)/moveInEvent+10.0);
-      }
-      bodyScatter.setParams(3.0, 10.0);
-      bodyRippleY.setParams(rippleSpeedYScene1, rippleAmplitudeScene1, 4.0, 'y');
-      bodyRippleX.setParams(rippleSpeedXScene1, rippleAmplitudeScene1, 6.0, 'x');
-      bodyRippleZ.setParams(rippleSpeedZScene1, rippleAmplitudeScene1, 5.0, 'z');
-      bodyScatter.triggerIn(true);
-    }
     
-
-     bodyEffectChain.process(bodyMesh, sceneTime);
   
     //SCENE 2 -- from
 
@@ -352,33 +308,31 @@ class MyApp : public al::App {
     if (sceneIndex == 1){
 
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
-    if (sceneTime < shellTurnsWhiteEvent) {
-    shellIncrementScene1 = ((sceneTime) / (shellTurnsWhiteEvent));
-    g.clear(1.0-shellIncrementScene1);
-    }
-    if (sceneTime >= shellTurnsWhiteEvent){
-    g.clear(0.0);
-    }
-    // if (sceneTime >= startTurnShellBlack && sceneTime<= (startTurnShellBlack + 3)){
-    //   shellIncrementScene1 -=  ((sceneTime-startTurnShellBlack)/ (startTurnShellBlack + 3));
-    //   g.clear(1.0-shellIncrementScene1);
-    // }
-    // if (sceneTime >= (startTurnShellBlack+3)){
-    //   //shellIncrementScene1 = 
-    //   g.clear(0.0);
-    // }
+
+    g.clear(0.0,0.0,0.09);
+   
   
 
 
     //PARTICLES SEQUENCE 1 
     
     g.pointSize(pointSize);
-    //g.color(1.0);
+    g.color(1.0,1.0,1.0,0.2);
+
+    for (int i = 0; i < blobs.size(); ++i) {
+      g.pushMatrix();
+     // g.color(1.0,sin(0.0+fearColorReact),0.5);
+      g.translate(blobs[i].pos());
+      g.rotate(blobs[i].quat());
+      g.draw(blobMesh);
+      g.popMatrix();
+      //blobMesh.update();
+    }
     //g.meshColor();
 
     //if (sceneTime >= particlesAppearEvent) {
-    g.meshColor();
-    g.draw(bodyMesh);
+    //g.meshColor();
+    g.draw(blobMesh);
    // }
     
 
