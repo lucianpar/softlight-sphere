@@ -48,10 +48,10 @@ public:
 
         // Initialize Mesh
         mainAttractor.makeNoiseCube(mainMesh, 0.2, 10000);
-        //mainMesh.primitive(al::Mesh::POINTS);
+        mainMesh.primitive(al::Mesh::LINES);
 
         for (int i = 0; i < mainMesh.vertices().size(); ++i) {
-            mainMesh.color(1.0, 1.0, 1.0, 0.8); // Orange particles with alpha transparency
+            mainMesh.color(1.0, 1.0, 1.0, 0.3); // Orange particles with alpha transparency
         }
         mainMesh.update();
         
@@ -101,13 +101,16 @@ public:
         sceneTime += dt;
 
         // Apply Attractor Effect
-        mainAttractor.processDadras(mainMesh, sceneTime, 0.00001);
+        mainAttractor.processDadras(mainMesh, sceneTime, 0.001);
         mainMesh.update();
     }
 
     void onDraw(al::Graphics& g) override {
+         glEnable(GL_BLEND);
+    g.blendTrans();
+      g.depthTesting(true); 
         g.clear(0.0, 0.0, 0.6, 1.0);
-        g.depthTesting(true);
+       // g.depthTesting(true);
         g.blending(true);
         g.blendAdd(); // Additive blending for glowing effect
 

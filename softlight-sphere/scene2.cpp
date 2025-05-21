@@ -81,20 +81,26 @@ class MyApp : public al::App {
 
   //MESHES//
   al::VAOMesh blobMesh; 
-  // al::VAOMesh bodyCloud;
-  // objParser newObjParser;
-  // al::Mesh boundarySphere;
-  // NewColorBuffer scene1ColorBuffer;
-
-
   std::vector<al::Nav> blobs;
   std::vector<al::Vec3f> velocity;
   std::vector<al::Vec3f> force;
-  float scene2Boundary = 10.0f;
+  float scene2Boundary = 15.0f;
+  bool inSphereScene2 = true;
+  float blobSeperationThresh = 2.0f;
+  int nAgentsScene2  = 30;
+  float blobsSpeedScene2 = 0.1;
+  float blobSizeScene2 = 2.5;
+
+   std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.12, 0.07, 0.83}, {0.03, 0.41, 0.33}};
 
 
   //MESH EFFECTS//
-  //for body 
+  VertexEffectChain blobsEffectChain;
+  RippleEffect blobsRippleX;
+  RippleEffect blobsRippleY;
+  RippleEffect blobsRippleZ;
+
+  //set up auto pulse with base verts
   
 
 
@@ -116,18 +122,11 @@ class MyApp : public al::App {
    //SCENE 1 
     
     
-    //karl code -- need to figure out where to put this
+    //karl code -- need to figure out where to put this -- maybe just in declerations in main file
 
     al::Vec3f randomVec3f(float scale) {
       return al::Vec3f(al::rnd::uniformS(), al::rnd::uniformS(), al::rnd::uniformS()) * scale;
     }
-
-  
-
-
-  
-
-
 
 
   //SCENE 2
@@ -157,14 +156,20 @@ class MyApp : public al::App {
     // //INITIALIZE LIGHTING 
 
     nav().pos(0, 0, 0);
-    addSphere(blobMesh, 0.5, 50, 50);
+
+    // std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.4f, 0.0f, 0.9}};
+    addSphere(blobMesh, blobSizeScene2, 50, 50);
     blobMesh.primitive(al::Mesh::TRIANGLES);
+    for (int i = 0; i < blobMesh.vertices().size(); i++){
+      // al::Vec3f newColor = colorPallete[i%2];
+      // blobMesh.color(newColor.x,newColor.y,newColor.z, 0.6);
+    }
 
     blobMesh.generateNormals();
 
     // blobMesh.update();
 
-    for (int b = 0; b < 4; ++b) {
+    for (int b = 0; b < nAgentsScene2; ++b) {
       al::Nav p;
       p.pos() = randomVec3f(5);
       p.quat()
@@ -173,12 +178,26 @@ class MyApp : public al::App {
           .normalize();
       // p.set(randomVec3f(5), randomVec3f(1));
       blobs.push_back(p);
-      velocity.push_back(al::Vec3f(0));
-      force.push_back(al::Vec3f(0));
+      // velocity.push_back(al::Vec3f(0));
+      // force.push_back(al::Vec3f(0));
     }
 
     blobMesh.update();
    
+
+
+
+    blobsRippleX.setParams( 0.2,  0.1, 1.0, 'x');
+    blobsRippleZ.setParams( 0.4,  0.1, 1.0, 'z');
+    //blobsRippleY.setParams( 0.01,  0.1, 1.0, 'y');
+    blobsEffectChain.pushBack(&blobsRippleZ);
+    //blobsEffectChain.pushBack(&blobsRippleY);
+    blobsEffectChain.pushBack(&blobsRippleX);
+
+
+    scene2Boundary = 1.0;
+    
+
 
 
 
@@ -244,6 +263,29 @@ class MyApp : public al::App {
     sequencer().update(globalTime); // XXX important to call this
     std::cout << "global time: " << globalTime << std::endl;
      fflush(stdout);
+
+    if(sceneTime >=0){
+      //boundary is initially set super small so they are constrained 
+      scene2Boundary = 15.0;
+    }
+    if(sceneTime >=0 && sceneTime <=1.0){
+      blobsSpeedScene2 = 3.0;
+    }
+    if(sceneTime >=1.0 && sceneTime <=5.0){
+       blobsSpeedScene2 = 0.1;
+    }
+
+
+
+    if (sceneTime >= 5.0){
+      blobsSpeedScene2 = 0.2;
+    }
+    if (sceneTime >= 8.0){
+      blobsSpeedScene2 = 0.05;
+    }
+    if (sceneTime >= 11.0){
+      blobsSpeedScene2 = 0.3;
+    }
     // should we call in the audio callback instead?
 
 
@@ -254,21 +296,43 @@ class MyApp : public al::App {
     //bodyScatter.triggerOut(true, bodyMesh);
 
     //bodyAttractor.processThomas(bodyMesh, globalTime, 0.001);
+    //SCENE SPECIFIC // 
+
+    for (int i = 0; i < blobs.size(); ++i) {
+    inSphereScene2 = true;
+    if (blobs[i].pos().mag() >= scene2Boundary) {
+     blobs[i].faceToward(blobs[i].uf()*(-0.7), 0.1);
+     blobs[i].moveF(scene2Boundary);
+
+    }
+    //checking blob against every other blob. turn around if too close to eachother
+    // for (int j = 0; j < blobs.size(); ++j){
+    //   if (blobs[i].pos() != blobs[j].pos()){
+    //    float distance = (blobs[i].pos() - blobs[j].pos()).mag();
+    //     if(distance <= blobSeperationThresh)
+    //     blobs[i].faceToward(blobs[i].uf()*-1.0, 0.1);
+    //     blobs[i].moveF(10.0);
+        
+    //   }
+    // }
+
+    
+    //if inSphere()
+    //agent[i].faceToward(clusterCenter*invertDir*run, 0.03);
+    //blobs[i].faceToward(blobs[i-1].pos() * (-1), 0.04);
+    blobs[i].moveF(1);
+
+    blobs[i].step(sceneTime * blobsSpeedScene2 / (sceneTime + 0.1)); // times time step -- make this "react to audio changes". division is to deal with step accumulation
+    //blobs[i].nudge()
+    
 
 
-    for (int k = 0; k < blobs.size(); ++k) {
-      
-      al::Vec3f a = blobs[k].pos();
-      al::Vec3f origin = al::Vec3f(0,0,0);
-      
-      al::Vec3f displacement = origin - a;
-      float distance = displacement.mag();
-      al::Vec3f f = displacement.normalize() * (distance - 1);
-      force[k] +=f;
+     }
 
+    blobsEffectChain.process(blobMesh, sceneTime);
+    
+    blobMesh.update();
 
-
-      }
   
 
 // velocity[k] += force[k] * dt;
@@ -286,8 +350,8 @@ class MyApp : public al::App {
 
     // bodyAttractor.processThomas(bodyMesh, globalTime, 0.0001);
     // bodyMesh.scale(1.01);
-    
-    float newAmplitude;
+
+  
     // newSpeed;
     
   
@@ -308,8 +372,12 @@ class MyApp : public al::App {
     if (sceneIndex == 1){
 
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
+    glEnable(GL_BLEND);
+    g.blendTrans();
+      g.depthTesting(true);  
+    g.clear(0.0,0.0,0.09 + ((sceneTime / (118-334))*0.8));
 
-    g.clear(0.0,0.0,0.09);
+    glDepthMask(GL_FALSE); // re enable later if needed
    
   
 
@@ -317,13 +385,17 @@ class MyApp : public al::App {
     //PARTICLES SEQUENCE 1 
     
     g.pointSize(pointSize);
-    g.color(1.0,1.0,1.0,0.2);
+    //g.color(1.0,1.0,1.0,0.2);
 
     for (int i = 0; i < blobs.size(); ++i) {
+      al::Vec3f newColor = colorPallete[i%3];
+       
       g.pushMatrix();
      // g.color(1.0,sin(0.0+fearColorReact),0.5);
       g.translate(blobs[i].pos());
       g.rotate(blobs[i].quat());
+      //g.meshColor();
+      g.color(newColor.x, newColor.y, newColor.z, 0.25);
       g.draw(blobMesh);
       g.popMatrix();
       //blobMesh.update();
@@ -332,7 +404,6 @@ class MyApp : public al::App {
 
     //if (sceneTime >= particlesAppearEvent) {
     //g.meshColor();
-    g.draw(blobMesh);
    // }
     
 
