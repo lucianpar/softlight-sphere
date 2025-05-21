@@ -8,6 +8,7 @@
 #include "al/graphics/al_VAO.hpp"
 #include "al/graphics/al_VAOMesh.hpp"
 #include "al/math/al_Random.hpp"
+#include "al/math/al_StdRandom.hpp"
 #include "al/math/al_Vec.hpp"
 #include "al/scene/al_SynthSequencer.hpp"
 #include "al/ui/al_ControlGUI.hpp"
@@ -67,6 +68,45 @@
 int sceneIndex = 1;
 
 
+
+// NEWER STAR FISH FUNCTION
+
+void addStarfish(al::Mesh& m, int arms = 5, float armLength = 1.0f, float armWidth = 0.1f) {
+    m.primitive(al::Mesh::TRIANGLES);
+    m.reset();
+
+    al::Vec3f center(0, 0, 0);
+
+    for (int i = 0; i < arms; ++i) {
+        float angle = i * (2 * M_PI / arms);
+        float nextAngle = angle + M_PI / arms; // for width offset
+
+        // Tip direction
+        al::Vec3f dir(cos(angle), sin(angle), 0);
+        al::Vec3f perp(-dir.y, dir.x, 0); // perpendicular for width
+
+        // Arm tip vertex
+        al::Vec3f tip = dir * armLength;
+        // Base left and right for width
+        al::Vec3f baseLeft = center + perp * armWidth * 0.5f;
+        al::Vec3f baseRight = center - perp * armWidth * 0.5f;
+
+        // Triangle: baseLeft -> tip -> baseRight
+        m.vertex(baseLeft);
+        m.vertex(tip);
+        m.vertex(baseRight);
+
+        // Color per arm (optional gradient)
+        float hue = float(i) / arms;
+        al::Color c = al::HSV(hue, 0.8, 0.9);
+        m.color(c);
+        m.color(c);
+        m.color(c);
+    }
+}
+
+
+
 //using namespace al;
 
 
@@ -81,15 +121,16 @@ class MyApp : public al::App {
 
   //MESHES//
   al::VAOMesh blobMesh; 
+  al::VAOMesh starCreatureMesh;
   std::vector<al::Nav> blobs;
   std::vector<al::Vec3f> velocity;
   std::vector<al::Vec3f> force;
-  float scene2Boundary = 15.0f;
+  float scene2Boundary = 30.0f;
   bool inSphereScene2 = true;
   float blobSeperationThresh = 2.0f;
   int nAgentsScene2  = 30;
   float blobsSpeedScene2 = 0.1;
-  float blobSizeScene2 = 2.5;
+  float blobSizeScene2 = 1.8;
 
    std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.12, 0.07, 0.83}, {0.03, 0.41, 0.33}};
 
@@ -99,6 +140,10 @@ class MyApp : public al::App {
   RippleEffect blobsRippleX;
   RippleEffect blobsRippleY;
   RippleEffect blobsRippleZ;
+
+  VertexEffectChain starEffectChain;
+   RippleEffect starRipple;
+  
 
   //set up auto pulse with base verts
   
@@ -167,6 +212,10 @@ class MyApp : public al::App {
 
     blobMesh.generateNormals();
 
+    addStarfish(starCreatureMesh);
+
+    starCreatureMesh.update();
+
     // blobMesh.update();
 
     for (int b = 0; b < nAgentsScene2; ++b) {
@@ -193,6 +242,12 @@ class MyApp : public al::App {
     blobsEffectChain.pushBack(&blobsRippleZ);
     //blobsEffectChain.pushBack(&blobsRippleY);
     blobsEffectChain.pushBack(&blobsRippleX);
+
+    starRipple.setParams( 1.0, 1.0, 1.0, 'z');
+
+    starEffectChain.pushBack(&starRipple);
+
+
 
 
     scene2Boundary = 1.0;
@@ -330,6 +385,8 @@ class MyApp : public al::App {
      }
 
     blobsEffectChain.process(blobMesh, sceneTime);
+
+    starEffectChain.process(starCreatureMesh, sceneTime);
     
     blobMesh.update();
 
@@ -364,6 +421,7 @@ class MyApp : public al::App {
   float shellIncrementScene1;
   float particleIncrementScene1;
   float pointSize = 3.0;
+  
   void onDraw(al::Graphics& g) override {
 
 
@@ -395,8 +453,18 @@ class MyApp : public al::App {
       g.translate(blobs[i].pos());
       g.rotate(blobs[i].quat());
       //g.meshColor();
+      // g.color(newColor.x, newColor.y, newColor.z, 0.25);
+      //draw blobs:
+      if (i % 2 == 1){
       g.color(newColor.x, newColor.y, newColor.z, 0.25);
       g.draw(blobMesh);
+      }
+      //draw creatures:
+      else {
+         g.color(newColor.x + 0.4, newColor.y + 0.4, newColor.z + 0.4, 1.0);
+        g.draw(starCreatureMesh);
+        // g.color(newColor.x + 0.4, newColor.y + 0.4, newColor.z + 0.4, 1.0);
+      }
       g.popMatrix();
       //blobMesh.update();
     }

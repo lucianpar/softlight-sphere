@@ -48,7 +48,7 @@ public:
 
         // Initialize Mesh
         mainAttractor.makeNoiseCube(mainMesh, 0.2, 10000);
-        mainMesh.primitive(al::Mesh::LINES);
+        mainMesh.primitive(al::Mesh::POINTS);
 
         for (int i = 0; i < mainMesh.vertices().size(); ++i) {
             mainMesh.color(1.0, 1.0, 1.0, 0.3); // Orange particles with alpha transparency
@@ -109,7 +109,7 @@ public:
          glEnable(GL_BLEND);
     g.blendTrans();
       g.depthTesting(true); 
-        g.clear(0.0, 0.0, 0.6, 1.0);
+        g.clear(0.0, 0.0, 0.5, 1.0);
        // g.depthTesting(true);
         g.blending(true);
         g.blendAdd(); // Additive blending for glowing effect
