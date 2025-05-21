@@ -19,6 +19,7 @@
 #include "al/graphics/al_Mesh.hpp"
 #include "al/graphics/al_Graphics.hpp"
 #include "al_ext/assets3d/al_Asset.hpp"
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -44,18 +45,9 @@
 
 /* TO DO:
 
-*figure out setting up bodyMesh as a uv for rotation
-* set up newer sequence -
-* make main shell transition to body - setting up heaeder
-*ask karl about lighting
-*scene 1 and 2 graphics 
+* fix jittering - need karls input. trying to get smooth 
 
-- START ACTUALLY SEQUENCING BASED ON TRACKS 
-
-
-- change how the sequencer works
-- SET UP TRACK ANALYZER / STRING SEQUENCE GENERATOR 
-*have option for sphere configuration 
+* fix audio players
 
 * set up scene containers for everything?
 
@@ -70,9 +62,9 @@ int sceneIndex = 1;
 
 
 // NEWER STAR FISH FUNCTION
-
+// this function was gpt'd - i got lazy and am still rapid prototyping
 void addStarfish(al::Mesh& m, int arms = 5, float armLength = 1.0f, float armWidth = 0.1f) {
-    m.primitive(al::Mesh::TRIANGLES);
+    m.primitive(al::Mesh::TRIANGLES_ADJACENCY);
     m.reset();
 
     al::Vec3f center(0, 0, 0);
@@ -116,6 +108,8 @@ class MyApp : public al::App {
   ////INITIAL OBJECTS AND DECLARATIONS////
   // ->
   al::Light light;
+  //Light light;
+  al::Material material;
 
   //// START DECLARATIONS FOR SCENE 1 ////
 
@@ -132,7 +126,7 @@ class MyApp : public al::App {
   float blobsSpeedScene2 = 0.1;
   float blobSizeScene2 = 1.8;
 
-   std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.12, 0.07, 0.83}, {0.03, 0.41, 0.33}};
+   std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.11, 0.2, 0.46}, {0.11, 0.44, 0.46}};
 
 
   //MESH EFFECTS//
@@ -203,7 +197,7 @@ class MyApp : public al::App {
     nav().pos(0, 0, 0);
 
     // std::vector<al::Vec3f> colorPallete = {{0.9f, 0.0f, 0.4}, {0.4f, 0.0f, 0.9}};
-    addSphere(blobMesh, blobSizeScene2, 50, 50);
+    addSphere(blobMesh, blobSizeScene2, 40, 40);
     blobMesh.primitive(al::Mesh::TRIANGLES);
     for (int i = 0; i < blobMesh.vertices().size(); i++){
       // al::Vec3f newColor = colorPallete[i%2];
@@ -354,10 +348,10 @@ class MyApp : public al::App {
     //SCENE SPECIFIC // 
 
     for (int i = 0; i < blobs.size(); ++i) {
-    inSphereScene2 = true;
+    //inSphereScene2 = true;
     if (blobs[i].pos().mag() >= scene2Boundary) {
-     blobs[i].faceToward(blobs[i].uf()*(-0.7), 0.1);
-     blobs[i].moveF(scene2Boundary);
+     blobs[i].faceToward(blobs[i].uf()*(-1.0), 0.1);
+     blobs[i].moveF(blobSizeScene2);
 
     }
     //checking blob against every other blob. turn around if too close to eachother
@@ -375,9 +369,10 @@ class MyApp : public al::App {
     //if inSphere()
     //agent[i].faceToward(clusterCenter*invertDir*run, 0.03);
     //blobs[i].faceToward(blobs[i-1].pos() * (-1), 0.04);
-    blobs[i].moveF(1);
+    blobs[i].moveF(1.0);
 
-    blobs[i].step(sceneTime * blobsSpeedScene2 / (sceneTime + 0.1)); // times time step -- make this "react to audio changes". division is to deal with step accumulation
+    blobs[i].step(sceneTime * blobsSpeedScene2 / (sceneTime + 0.1)); // scene time vs dt - unsure what works better for this
+    // times time step -- make this "react to audio changes". division is to deal with step accumulation
     //blobs[i].nudge()
     
 
@@ -432,8 +427,19 @@ class MyApp : public al::App {
     //THIS SEQUENCE MAKES THE SHELL APPEAR 
     glEnable(GL_BLEND);
     g.blendTrans();
-      g.depthTesting(true);  
+    g.depthTesting(true);  
     g.clear(0.0,0.0,0.09 + ((sceneTime / (118-334))*0.8));
+
+    g.lighting(true);
+    // lighting from karl's example
+    light.globalAmbient(al::RGB(0.5, (1.0), 1.0));
+    light.ambient(al::RGB(0.5, (1.0), 1.0));
+    light.diffuse(al::RGB(1, 1, 0.5));
+    g.light(light);
+    material.specular(light.diffuse() * 0.3);
+    material.shininess(50);
+    g.material(material);
+    //end of lighting for karl's example
 
     glDepthMask(GL_FALSE); // re enable later if needed
    
@@ -456,12 +462,12 @@ class MyApp : public al::App {
       // g.color(newColor.x, newColor.y, newColor.z, 0.25);
       //draw blobs:
       if (i % 2 == 1){
-      g.color(newColor.x, newColor.y, newColor.z, 0.25);
+      g.color(newColor.x, newColor.y, newColor.z, 0.4 + (sin(sceneTime*2.0) * 0.1));
       g.draw(blobMesh);
       }
       //draw creatures:
       else {
-         g.color(newColor.x + 0.4, newColor.y + 0.4, newColor.z + 0.4, 1.0);
+         g.color(newColor.x + 0.4, newColor.y + 0.4, newColor.z + 0.4, 0.4 + (sin(sceneTime*0.5) * 0.1));
         g.draw(starCreatureMesh);
         // g.color(newColor.x + 0.4, newColor.y + 0.4, newColor.z + 0.4, 1.0);
       }
