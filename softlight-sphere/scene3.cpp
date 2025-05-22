@@ -38,10 +38,10 @@ public:
     al::VAOMesh ribbon{al::Mesh::TRIANGLES};
     // Meshes and Effects
     
-    al::Parameter width{"Width", 0.1, 0, 0.2};
+    al::Parameter width{"Width", 0.2, 0, 0.2};
     al::VAOMesh mainMesh;
     Attractor mainAttractor;
-    float updatedSpeed = 2.0;
+    float updatedSpeed = 1.0;
 
      al::Light light;
   //Light light;
@@ -61,7 +61,7 @@ public:
         nav().pos(al::Vec3d(0, 0, 0)); // Move the camera back for view
 
         // Initialize Mesh
-        mainAttractor.makeNoiseCube(mainMesh, 20.0, 2);
+        mainAttractor.makeNoiseCube(mainMesh, 2.0, 2);
         mainMesh.primitive(al::Mesh::POINTS);
 
         head.moveF(1.0);
@@ -85,7 +85,7 @@ public:
         sceneTime += dt;
 
         // Apply Attractor Effect
-        mainAttractor.processLorenz(mainMesh, dt, 0.1);
+        mainAttractor.processRabinovich(mainMesh, dt, 1.0);
         target = mainMesh.vertices()[1];
         //head.faceToward(target);
 
